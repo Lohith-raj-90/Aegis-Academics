@@ -37,6 +37,8 @@ interface StarParticle {
 interface QuantumCore3DProps {
   size?: number;
   colorTheme?: "amber" | "indigo" | "mixed";
+  readinessScore?: number;
+  studyVelocity?: number;
 }
 
 type ModeType = "helios" | "onyx" | "manifold";
@@ -44,6 +46,8 @@ type ModeType = "helios" | "onyx" | "manifold";
 export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
   size = 210,
   colorTheme = "amber",
+  readinessScore = 80,
+  studyVelocity = 35,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeMode, setActiveMode] = useState<ModeType>("helios");
@@ -303,10 +307,17 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
       const cx = size / 2;
       const cy = size / 2;
 
+      // Dynamic Gamification multipliers
+      // Higher readiness score -> faster rotation speed
+      const speedMultiplier = 0.3 + (readinessScore / 100) * 1.5;
+      
+      // Higher study velocity -> more active stars particle density (Max 45)
+      const starsToRenderCount = Math.min(stars.current.length, Math.floor(12 + (studyVelocity / 60) * 33));
+
       // Drag inertia drift updates
       if (!isDragging.current) {
-        velocities.current.x += (0.002 - velocities.current.x) * 0.05;
-        velocities.current.y += (0.003 - velocities.current.y) * 0.05;
+        velocities.current.x += (0.002 * speedMultiplier - velocities.current.x) * 0.05;
+        velocities.current.y += (0.003 * speedMultiplier - velocities.current.y) * 0.05;
         angles.current.x += velocities.current.x;
         angles.current.y += velocities.current.y;
       } else {
@@ -351,7 +362,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
       let minHoverDist = 18;
 
       // Update and drift stars stardust background
-      stars.current.forEach((star) => {
+      stars.current.slice(0, starsToRenderCount).forEach((star) => {
         star.x += star.vx;
         star.y += star.vy;
         star.z += star.vz;

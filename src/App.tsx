@@ -29,30 +29,58 @@ import { QuizView } from "./components/QuizView";
 import { ChatView } from "./components/ChatView";
 import { SmoothCursor } from "./components/SmoothCursor";
 
+// Helper hook for synchronized local storage state rehydration
+function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.warn(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.warn(`Error setting localStorage key "${key}":`, error);
+    }
+  };
+
+  return [storedValue, setValue];
+}
+
 export default function App() {
   // Authentication & Layout Routes
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useLocalStorage("aegis_is_logged_in", false);
   const [isViewingPromo, setIsViewingPromo] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const [activeTab, setActiveTab] = useLocalStorage<TabType>("aegis_active_tab", "dashboard");
+
+  // Layout Calibration modes
+  const [isDeepFocus, setIsDeepFocus] = useLocalStorage("aegis_deep_focus_mode", false);
 
   // Global Sync States
-  const [username, setUsername] = useState("Lohith R C");
-  const [userEmail, setUserEmail] = useState("lohithraj9090@gmail.com");
-  const [attendancePct, setAttendancePct] = useState(84);
-  const [readinessScore, setReadinessScore] = useState(86);
+  const [username, setUsername] = useLocalStorage("aegis_username", "Lohith R C");
+  const [userEmail, setUserEmail] = useLocalStorage("aegis_user_email", "lohithraj9095@gmail.com");
+  const [attendancePct, setAttendancePct] = useLocalStorage("aegis_attendance_pct", 84);
+  const [readinessScore, setReadinessScore] = useLocalStorage("aegis_readiness_score", 86);
 
   // Settings Modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsNameInput, setSettingsNameInput] = useState(username);
   const [settingsEmailInput, setSettingsEmailInput] = useState(userEmail);
 
-  // Dynamic lists
-  const [tasks, setTasks] = useState<ExamTask[]>(DEFAULT_TASKS);
-  const [unscheduled, setUnscheduled] = useState<UnscheduledTarget[]>(DEFAULT_UNSCHEDULED);
-  const [libraryResources, setLibraryResources] = useState<LibraryResource[]>(LIBRARY_RESOURCES);
+  // Dynamic lists with persistence hydration
+  const [tasks, setTasks] = useLocalStorage<ExamTask[]>("aegis_tasks", DEFAULT_TASKS);
+  const [unscheduled, setUnscheduled] = useLocalStorage<UnscheduledTarget[]>("aegis_unscheduled", DEFAULT_UNSCHEDULED);
+  const [libraryResources, setLibraryResources] = useLocalStorage<LibraryResource[]>("aegis_library_resources", LIBRARY_RESOURCES);
 
-  // Chat memory
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  // Chat memory persistence
+  const [chatMessages, setChatMessages] = useLocalStorage<ChatMessage[]>("aegis_chat_messages", [
     {
       id: "greet-1",
       role: "assistant",
@@ -117,6 +145,68 @@ export default function App() {
     }));
   };
 
+  // Specialized rule-matching static processor for bulletproof offline recovery (Upgrade 5)
+  const getLocalFallbackResponse = (userText: string): string => {
+    const query = userText.toLowerCase();
+
+    if (query.includes("calculus") || query.includes("limit") || query.includes("green") || query.includes("fourier") || query.includes("math") || query.includes("integral") || query.includes("coordinate")) {
+      return `[AEGIS OFFLINE CORE :: CALCULUS ADVICE]
+Hello Lohith R C, I have resolved your Calculus coordinates locally. In Calculus MAT-301, the Green's Scalar Theorem converts double-integral coordinate boundary regions into single line integrals:
+
+∮_C (P dx + Q dy) = ∬_D (∂Q/∂x - ∂P/∂y) dA
+
+For fourier series, ensure the boundary intervals satisfy the Dirichlet limits on a standard [0, 2π] coordinate axis.`;
+    }
+
+    if (query.includes("quantum") || query.includes("schrodinger") || query.includes("qubit") || query.includes("circuits") || query.includes("superposition") || query.includes("physics") || query.includes("gate")) {
+      return `[AEGIS OFFLINE CORE :: QUANTUM CIRCUIT EQUATIONS]
+Schrödinger wave mechanics and Bloch Sphere coordinates have been loaded locally:
+
+1. Qubit rotations scale on vector states:
+   |ψ⟩ = cos(θ/2)|0⟩ + e^(iφ)sin(θ/2)|1⟩
+2. Superposition coordinates represent probability amplitudes where |α|^2 + |β|^2 = 1.
+
+I recommend keeping your study practice velocity high on your command dashboard to lock in optimal metrics.`;
+    }
+
+    if (query.includes("np") || query.includes("halt") || query.includes("automata") || query.includes("turing") || query.includes("tape") || query.includes("languages") || query.includes("reduc")) {
+      return `[AEGIS OFFLINE CORE :: COMPUTABILITY LIMITS]
+Under Turing Machine and Formal Language Automata limits:
+- The classic Halting Problem (H_TM) is proven undecidable but Turing-recognizable.
+- Chomsky Hierarchy outlines 4 standard language classes (Regular, Context-Free, Context-Sensitive, Recursively Enumerable).
+- NP-Complete algorithms can be reduced to Boolean SAT via Cook-Levin mapping logic in O(n^k) polynomial duration.`;
+    }
+
+    if (query.includes("attendance") || query.includes("vtu") || query.includes("clearance") || query.includes("scores") || query.includes("skip") || query.includes("lecture") || query.includes("forecaster")) {
+      return `[AEGIS OFFLINE CORE :: VTU REGULATORY SYSTEM]
+VTU Academic Eligibility Regulations mandate:
+- Minimum required attendance thresholds are set strictly at 75%.
+- Pre-emptive alerts and warnings trigger when calculated quotients drop below 80%.
+- Deficit under 75% will detain the academic node and block active exam hall registration.
+
+Interact with your daily class ledger on the Attendance sub-tab to simulate lecture statuses and safeguard qualifications!`;
+    }
+
+    if (query.includes("planner") || query.includes("study") || query.includes("tasks") || query.includes("goals") || query.includes("schedule")) {
+      return `[AEGIS OFFLINE CORE :: STUDY ARCHITECTURE RECOMMENDATION]
+Scholastic planners synced:
+- Schedule a minimum 1.5 Hour practice block for low mastery subjects like Automata (54%).
+- Use checkbox items on the targets ledger to automatically hydrate overall exam readiness.
+- Maintain regular focus durations over the course of the week.`;
+    }
+
+    return `[AEGIS LOCAL SECURE OFFLINE BUFFER]
+Greetings, Scholar. Although the server-side AI connection is currently offline, my localized rule-matching processors are active.
+
+I can guide you on:
+- "VTU Attendance eligibility policies"
+- "Green's Theorem & Calculus integrals"
+- "Schrödinger & Bloch Sphere qubits"
+- "Turing machines & NP-Reductions"
+
+Please input any matching keywords to trigger coordinate analytics advice.`;
+  };
+
   // Chat message sender integration (real Express API)
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessage = {
@@ -141,25 +231,37 @@ export default function App() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error("Express server-proxy returned non-success code");
+      }
+
       const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       const assistantMsg: ChatMessage = {
         id: `chat-${Date.now()}-reply`,
         role: "assistant",
-        content: data.content || data.error || "Communication coordinate error.",
+        content: data.content || "Communication coordinate error.",
         timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
       };
 
       setChatMessages(prev => [...prev, assistantMsg]);
     } catch (e) {
-      console.error(e);
-      const errReply: ChatMessage = {
-        id: `chat-${Date.now()}-err`,
+      console.warn("Server Endpoint offline. Deploying scholarly Offline Fallback Buffer:", e);
+      
+      const fallbackText = getLocalFallbackResponse(text);
+      
+      const fallbackMsg: ChatMessage = {
+        id: `chat-${Date.now()}-fallback`,
         role: "assistant",
-        content: "Offline limits. Core neural communication obstructed. Please define GEMINI_API_KEY inside the Secrets panel.",
-        timestamp: "ERR"
+        content: fallbackText,
+        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
       };
-      setChatMessages(prev => [...prev, errReply]);
+      
+      setChatMessages(prev => [...prev, fallbackMsg]);
     } finally {
       setIsChatLoading(false);
     }
@@ -205,8 +307,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex font-sans selection:bg-amber-400 selection:text-neutral-950">
       
-      {/* Decorative ambient visual background glows */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[radial-gradient(ellipse_at_top,rgba(180,140,80,0.05)_0%,transparent_70%)] pointer-events-none" />
+      {/* Decorative ambient visual background glows - dimmed in deep focus mode */}
+      <div className={`absolute top-0 right-1/4 w-96 h-96 bg-[radial-gradient(ellipse_at_top,rgba(180,140,80,0.05)_0%,transparent_70%)] pointer-events-none transition-all duration-1000 ${isDeepFocus ? "opacity-15 blur-lg" : "opacity-100"}`} />
 
       {/* LEFT SIDEBAR REPLICA (Document 1 layout style) */}
       <aside className="w-64 border-r border-neutral-900 bg-neutral-950 flex flex-col justify-between shrink-0 p-5 relative z-10">
@@ -373,9 +475,34 @@ export default function App() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono text-neutral-400">
+          {/* Interactive Layout Mode Switcher */}
+          <div className="flex items-center bg-neutral-900/65 border border-neutral-850 rounded-lg p-0.5 font-mono text-[10px] shadow-inner select-none">
+            <button
+              onClick={() => setIsDeepFocus(false)}
+              className={`px-3 py-1 rounded transition-all cursor-pointer ${
+                !isDeepFocus
+                  ? "bg-amber-400/10 text-amber-400 font-semibold border border-amber-400/20"
+                  : "text-neutral-500 hover:text-white"
+              }`}
+            >
+              ANALYTICS_COMMAND
+            </button>
+            <button
+              onClick={() => setIsDeepFocus(true)}
+              className={`px-3 py-1 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
+                isDeepFocus
+                  ? "bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20 animate-pulse"
+                  : "text-neutral-500 hover:text-white"
+              }`}
+            >
+              <span className={`w-1 h-1 rounded-full bg-indigo-400 ${isDeepFocus ? "block" : "hidden"}`} />
+              DEEP_FOCUS
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs font-mono text-neutral-400 font-light">
             <span className="hidden md:inline select-none">NODE_IDENTITY :: {userEmail}</span>
-            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="Connection encrypted" />
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-500 ${isDeepFocus ? "bg-indigo-400" : "bg-amber-400"}`} title="Connection state" />
           </div>
         </header>
 
@@ -389,6 +516,7 @@ export default function App() {
               totalTasksCount={tasks.length}
               readinessScore={readinessScore}
               username={username}
+              isDeepFocus={isDeepFocus}
             />
           )}
 
@@ -430,6 +558,7 @@ export default function App() {
               messages={chatMessages}
               onSendMessage={handleSendMessage}
               isLoading={isChatLoading}
+              isDeepFocus={isDeepFocus}
             />
           )}
         </div>

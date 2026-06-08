@@ -33,6 +33,7 @@ interface DashboardViewProps {
   totalTasksCount: number;
   readinessScore: number;
   username: string;
+  isDeepFocus?: boolean;
 }
 
 // Structured Mock Subjects for stateful masteries
@@ -52,7 +53,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   completedTasksCount,
   totalTasksCount,
   readinessScore: initialReadiness,
-  username
+  username,
+  isDeepFocus = false
 }) => {
   // 1. STATEFUL: Active Simulated Lecture Simulator
   const [sessionLecturesSkipped, setSessionLecturesSkipped] = useState<number>(0);
@@ -298,7 +300,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* Render Canvas */}
             <div className="py-4 flex justify-center items-center">
-              <QuantumCore3D size={185} colorTheme="amber" />
+              <QuantumCore3D 
+                size={185} 
+                colorTheme="amber" 
+                readinessScore={initialReadiness}
+                studyVelocity={Math.round(weeklyVelocity.reduce((sum, val) => sum + val.hours, 0))}
+              />
             </div>
 
             <div className="space-y-1 bg-zinc-900/30 border border-zinc-900 p-2.5 rounded-xl text-center">
@@ -315,146 +322,148 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       </div>
 
-      {/* Stateful Action Row - Dynamic Lecture Skipper & Smart Advisor */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Stateful Action Row - Dynamic Lecture Skipper & Smart Advisor - hidden inside Deep Focus */}
+      {!isDeepFocus && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Dynamic Forecaster & Simulator Widget */}
-        <div className="lg:col-span-6 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between space-y-4">
-          <div className="flex justify-between items-start">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-mono tracking-widest text-indigo-400 block">// PREVENTIVE_FORECAST</span>
-              <h3 className="text-base font-semibold text-white">VTU Attendance Simulator</h3>
-            </div>
-            <span className="px-2 py-0.5 rounded bg-zinc-900 text-[8px] font-mono text-zinc-400 uppercase border border-zinc-850 tracking-wider">
-              Eligibility math
-            </span>
-          </div>
-
-          <p className="text-zinc-400 text-xs font-light">
-            Slide block to simulate missing upcoming college lectures and inspect warning metrics. Total lectures monitored = {totalLecturesCount}.
-          </p>
-
-          {/* Interactive Simulation Panel */}
-          <div className="py-2.5 space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-zinc-400 font-light">Upcoming Lectures Skipped:</span>
-                <span className="text-amber-400 font-bold">{sessionLecturesSkipped} Lectures</span>
+          {/* Dynamic Forecaster & Simulator Widget */}
+          <div className="lg:col-span-6 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between space-y-4">
+            <div className="flex justify-between items-start">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono tracking-widest text-indigo-400 block">// PREVENTIVE_FORECAST</span>
+                <h3 className="text-base font-semibold text-white">VTU Attendance Simulator</h3>
               </div>
-              <input 
-                type="range"
-                min="0"
-                max="12"
-                value={sessionLecturesSkipped}
-                onChange={(e) => setSessionLecturesSkipped(Number(e.target.value))}
-                className="w-full accent-amber-450 bg-zinc-900 rounded-lg cursor-pointer h-1.5"
-              />
+              <span className="px-2 py-0.5 rounded bg-zinc-900 text-[8px] font-mono text-zinc-400 uppercase border border-zinc-850 tracking-wider">
+                Eligibility math
+              </span>
             </div>
 
-            {/* Calculations Output */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-3 bg-zinc-900/35 border border-zinc-900 rounded-xl">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase block">Simulated Attend.</span>
-                <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className={`text-2xl font-mono font-bold ${
-                    simulatedAttendancePct >= 80 ? "text-emerald-400" : simulatedAttendancePct >= 75 ? "text-amber-400" : "text-red-400"
-                  }`}>
-                    {simulatedAttendancePct}%
-                  </span>
-                  <span className="text-[10px] text-zinc-400">({currentAttendedSimulated}/{totalLecturesCount})</span>
+            <p className="text-zinc-400 text-xs font-light">
+              Slide block to simulate missing upcoming college lectures and inspect warning metrics. Total lectures monitored = {totalLecturesCount}.
+            </p>
+
+            {/* Interactive Simulation Panel */}
+            <div className="py-2.5 space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-zinc-400 font-light">Upcoming Lectures Skipped:</span>
+                  <span className="text-amber-400 font-bold">{sessionLecturesSkipped} Lectures</span>
+                </div>
+                <input 
+                  type="range"
+                  min="0"
+                  max="12"
+                  value={sessionLecturesSkipped}
+                  onChange={(e) => setSessionLecturesSkipped(Number(e.target.value))}
+                  className="w-full accent-amber-450 bg-zinc-900 rounded-lg cursor-pointer h-1.5"
+                />
+              </div>
+
+              {/* Calculations Output */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="p-3 bg-zinc-900/35 border border-zinc-900 rounded-xl">
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase block">Simulated Attend.</span>
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <span className={`text-2xl font-mono font-bold ${
+                      simulatedAttendancePct >= 80 ? "text-emerald-400" : simulatedAttendancePct >= 75 ? "text-amber-400" : "text-red-400"
+                    }`}>
+                      {simulatedAttendancePct}%
+                    </span>
+                    <span className="text-[10px] text-zinc-400">({currentAttendedSimulated}/{totalLecturesCount})</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-zinc-900/35 border border-zinc-900 rounded-xl">
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase block">College Clearance Status</span>
+                  <div className="mt-1">
+                    {simulatedAttendancePct >= 80 ? (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-emerald-400 bg-emerald-500/5 px-2.5 py-0.5 rounded border border-emerald-500/15">
+                        ✓ EXAM ELIGIBLE
+                      </span>
+                    ) : simulatedAttendancePct >= 75 ? (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-amber-450 bg-amber-400/5 px-2.5 py-0.5 rounded border border-amber-400/15">
+                        ⚠ WARNING DEFICIT
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-red-400 bg-red-400/5 px-2.5 py-0.5 rounded border border-red-400/15">
+                        ⚡ BLOCKED // DETAINED
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              <div className="p-3 bg-zinc-900/35 border border-zinc-900 rounded-xl">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase block">College Clearance Status</span>
-                <div className="mt-1">
-                  {simulatedAttendancePct >= 80 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-emerald-400 bg-emerald-500/5 px-2.5 py-0.5 rounded border border-emerald-500/15">
-                      ✓ EXAM ELIGIBLE
-                    </span>
-                  ) : simulatedAttendancePct >= 75 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-amber-450 bg-amber-400/5 px-2.5 py-0.5 rounded border border-amber-400/15">
-                      ⚠ WARNING DEFICIT
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-red-400 bg-red-400/5 px-2.5 py-0.5 rounded border border-red-400/15">
-                      ⚡ BLOCKED // DETAINED
-                    </span>
-                  )}
-                </div>
-              </div>
             </div>
-          </div>
 
-          <div className="pt-2 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
-            <span>CALCULATION = DYNAMIC</span>
-            <button 
-              onClick={() => onNavigateToTab("attendance")}
-              className="text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
-            >
-              Open Forecaster Engine <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-
-        {/* Aegis AI Neural Advisor Feed (Dynamic advisor cards) */}
-        <div className="lg:col-span-6 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-amber-500" />
-              <h3 className="text-base font-semibold text-white">Aegis Neural Advisor</h3>
-            </div>
-            <span className="text-[10px] font-mono text-amber-450 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              REAL-TIME INSIGHT
-            </span>
-          </div>
-
-          {/* Dynamic Insight Banner space */}
-          <div className="bg-zinc-900/20 border border-zinc-900 rounded-xl p-4.5 relative overflow-hidden flex-1 flex flex-col justify-center min-h-[110px]">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/2 bg-radial-gradient pointer-events-none" />
-            
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeInsightIndex}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-2.5"
+            <div className="pt-2 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
+              <span>CALCULATION = DYNAMIC</span>
+              <button 
+                onClick={() => onNavigateToTab("attendance")}
+                className="text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
               >
-                <p className="text-zinc-200 text-xs italic font-light leading-relaxed">
-                  "{insightOptions[activeInsightIndex]}"
-                </p>
-                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
-                  <span>SOURCE_NODES = MATHS_COMPSC</span>
-                  <span>CALIBRATION CONFIDENCE: 94%</span>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                Open Forecaster Engine <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
-          <div className="pt-2 border-t border-zinc-900 flex justify-between items-center">
-            <button 
-              onClick={triggerNextInsight}
-              className="flex items-center gap-1 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer group"
-            >
-              <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
-              Cycle Recommendation
-            </button>
-            <span className="text-[10px] font-mono text-zinc-500">
-              INDEX: {activeInsightIndex + 1}/{insightOptions.length}
-            </span>
+          {/* Aegis AI Neural Advisor Feed (Dynamic advisor cards) */}
+          <div className="lg:col-span-6 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-amber-500" />
+                <h3 className="text-base font-semibold text-white">Aegis Neural Advisor</h3>
+              </div>
+              <span className="text-[10px] font-mono text-amber-450 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                REAL-TIME INSIGHT
+              </span>
+            </div>
+
+            {/* Dynamic Insight Banner space */}
+            <div className="bg-zinc-900/20 border border-zinc-900 rounded-xl p-4.5 relative overflow-hidden flex-1 flex flex-col justify-center min-h-[110px]">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/2 bg-radial-gradient pointer-events-none" />
+              
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeInsightIndex}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-2.5"
+                >
+                  <p className="text-zinc-200 text-xs italic font-light leading-relaxed">
+                    "{insightOptions[activeInsightIndex]}"
+                  </p>
+                  <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
+                    <span>SOURCE_NODES = MATHS_COMPSC</span>
+                    <span>CALIBRATION CONFIDENCE: 94%</span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <div className="pt-2 border-t border-zinc-900 flex justify-between items-center">
+              <button 
+                onClick={triggerNextInsight}
+                className="flex items-center gap-1 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors cursor-pointer group"
+              >
+                <RefreshCw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
+                Cycle Recommendation
+              </button>
+              <span className="text-[10px] font-mono text-zinc-500">
+                INDEX: {activeInsightIndex + 1}/{insightOptions.length}
+              </span>
+            </div>
           </div>
+
         </div>
-
-      </div>
+      )}
 
       {/* Interactive Curriculum Mastery Matrix & Action Center */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Subjects & Curriculum Mastery Matrix */}
-        <div className="lg:col-span-8 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl space-y-5">
+        <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl space-y-5 transition-all duration-300`}>
           <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
@@ -560,43 +569,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Real-Time Live Activity Streams */}
-        <div className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
-              <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-indigo-400" />
-                Activity Timeline
-              </h3>
-              <span className="text-[10px] font-mono text-zinc-500">LIVE FEED</span>
-            </div>
+        {/* Real-Time Live Activity Streams - hidden during Deep Focus */}
+        {!isDeepFocus && (
+          <div className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
+                <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-indigo-400" />
+                  Activity Timeline
+                </h3>
+                <span className="text-[10px] font-mono text-zinc-500">LIVE FEED</span>
+              </div>
 
-            <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-              {localLogs.map((log) => (
-                <div key={log.id} className="p-2.5 bg-zinc-900/35 border border-zinc-900/60 rounded-xl space-y-1 hover:border-zinc-800 transition-colors">
-                  <div className="flex justify-between items-center">
-                    <span className="font-mono text-[9px] text-zinc-500">{log.time}</span>
-                    <span className={`text-[8px] font-mono px-1 rounded uppercase tracking-wider ${
-                      log.type === "success" 
-                        ? "bg-green-500/10 text-green-400 border border-green-500/10" 
-                        : log.type === "warning"
-                        ? "bg-red-500/10 text-red-400 border border-red-500/10"
-                        : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/10"
-                    }`}>
-                      {log.type}
-                    </span>
+              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                {localLogs.map((log) => (
+                  <div key={log.id} className="p-2.5 bg-zinc-900/35 border border-zinc-900/60 rounded-xl space-y-1 hover:border-zinc-800 transition-colors">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-[9px] text-zinc-500">{log.time}</span>
+                      <span className={`text-[8px] font-mono px-1 rounded uppercase tracking-wider ${
+                        log.type === "success" 
+                          ? "bg-green-500/10 text-green-400 border border-green-500/10" 
+                          : log.type === "warning"
+                          ? "bg-red-500/10 text-red-400 border border-red-500/10"
+                          : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/10"
+                      }`}>
+                        {log.type}
+                      </span>
+                    </div>
+                    <p className="text-zinc-200 text-xs font-light leading-snug">{log.text}</p>
                   </div>
-                  <p className="text-zinc-200 text-xs font-light leading-snug">{log.text}</p>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
+              <span>SECURE SYSTEM FLUSH</span>
+              <span className="text-zinc-400 text-[9px]">UTC STATUS = OK</span>
             </div>
           </div>
-
-          <div className="pt-4 mt-4 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
-            <span>SECURE SYSTEM FLUSH</span>
-            <span className="text-zinc-400 text-[9px]">UTC STATUS = OK</span>
-          </div>
-        </div>
+        )}
 
       </div>
 
@@ -604,7 +615,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Dynamic Focus hours bar visualization */}
-        <div className="lg:col-span-8 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative">
+        <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl relative transition-all duration-300`}>
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
@@ -630,7 +641,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   
                   {/* Floating badge details */}
-                  <div className="absolute bottom-full mb-2 bg-neutral-950 border border-zinc-800 text-[9px] font-mono text-amber-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none text-center z-20 shadow-xl whitespace-nowrap">
+                  <div className="absolute bottom-full mb-2 bg-neutral-950 border border-zinc-880 text-[9px] font-mono text-amber-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none text-center z-20 shadow-xl whitespace-nowrap">
                     {val.label}<br />
                     <span className="text-white font-bold">{val.hours} Hours Focused</span>
                   </div>
@@ -662,57 +673,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Milestones Panel */}
-        <div className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
-              <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
+        {/* Milestones Panel - hidden during Deep Focus */}
+        {!isDeepFocus && (
+          <div className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
                 <Calendar className="w-4 h-4 text-amber-500" />
-                Strategic Objectives
-              </h3>
-              <span className="text-[10px] font-mono text-zinc-500">VTU TARGETS</span>
+                 Strategic Objectives
+              </div>
+
+              <div className="space-y-3.5">
+                <div 
+                  onClick={() => onNavigateToTab("quiz")}
+                  className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-amber-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
+                >
+                  <div>
+                    <span className="text-xs font-semibold text-white group-hover:text-amber-400 transition-colors block">Calculus Diagnostic Tests</span>
+                    <span className="text-[9px] text-zinc-500 font-mono">Green's theorems & series bounds</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-400/5 text-amber-400 border border-amber-400/20 font-bold">Dec 11</span>
+                </div>
+
+                <div 
+                  onClick={() => onNavigateToTab("quiz")}
+                  className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-indigo-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
+                >
+                  <div>
+                    <span className="text-xs font-semibold text-white group-hover:text-indigo-400 transition-colors block">Quantum Circuit Equations</span>
+                    <span className="text-[9px] text-zinc-500 font-mono">Bloch sphere & superposition gates</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-400/5 text-indigo-400 border border-indigo-455/20 font-bold">Dec 15</span>
+                </div>
+
+                <div 
+                  onClick={() => onNavigateToTab("planner")}
+                  className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-purple-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
+                >
+                  <div>
+                    <span className="text-xs font-semibold text-white group-hover:text-purple-400 transition-colors block">NP-Complete Computations</span>
+                    <span className="text-[9px] text-zinc-500 font-mono">Turing tape halts and reductions</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-850">Dec 20</span>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3.5">
-              <div 
-                onClick={() => onNavigateToTab("quiz")}
-                className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-amber-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
-              >
-                <div>
-                  <span className="text-xs font-semibold text-white group-hover:text-amber-400 transition-colors block">Calculus Diagnostic Tests</span>
-                  <span className="text-[9px] text-zinc-500 font-mono">Green's theorems & series bounds</span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-400/5 text-amber-400 border border-amber-400/20 font-bold">Dec 11</span>
-              </div>
-
-              <div 
-                onClick={() => onNavigateToTab("quiz")}
-                className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-indigo-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
-              >
-                <div>
-                  <span className="text-xs font-semibold text-white group-hover:text-indigo-400 transition-colors block">Quantum Circuit Equations</span>
-                  <span className="text-[9px] text-zinc-500 font-mono">Bloch sphere & superposition gates</span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-400/5 text-indigo-400 border border-indigo-400/20 font-bold">Dec 15</span>
-              </div>
-
-              <div 
-                onClick={() => onNavigateToTab("planner")}
-                className="p-3 bg-zinc-900/35 border border-zinc-900 hover:border-purple-400/20 rounded-xl flex justify-between items-center transition-all cursor-pointer group"
-              >
-                <div>
-                  <span className="text-xs font-semibold text-white group-hover:text-purple-400 transition-colors block">NP-Complete Computations</span>
-                  <span className="text-[9px] text-zinc-500 font-mono">Turing tape halts and reductions</span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-850">Dec 20</span>
-              </div>
+            <div className="pt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500 text-right">
+              SECURE ADVISOR COMPLIATED ✓
             </div>
           </div>
-
-          <div className="pt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500 text-right">
-            SECURE ADVISOR COMPLIATED ✓
-          </div>
-        </div>
+        )}
 
       </div>
 

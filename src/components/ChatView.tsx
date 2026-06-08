@@ -6,12 +6,14 @@ interface ChatViewProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => Promise<void>;
   isLoading: boolean;
+  isDeepFocus?: boolean;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
   messages,
   onSendMessage,
-  isLoading
+  isLoading,
+  isDeepFocus = false
 }) => {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -55,8 +57,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-sans h-[calc(100vh-140px)] min-h-[500px]">
       
-      {/* Left Column: Core Conversational Chat Console (span 8) */}
-      <div className="lg:col-span-8 bg-neutral-900/30 border border-neutral-850 rounded-xl flex flex-col justify-between overflow-hidden relative">
+      {/* Left Column: Core Conversational Chat Console (span 8, or full span 12 under deep focus) */}
+      <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-neutral-900/30 border border-neutral-850 rounded-xl flex flex-col justify-between overflow-hidden relative transition-all duration-300`}>
         
         {/* Chat Console Header */}
         <div className="p-4 border-b border-neutral-900 bg-neutral-900/40 flex justify-between items-center z-10">
@@ -152,53 +154,55 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </form>
       </div>
 
-      {/* Right Column: Fast Directives Utilities (span 4) (as per Document 6 sidebar) */}
-      <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-850 p-5 rounded-xl flex flex-col justify-between">
-        <div className="space-y-4">
-          <div className="border-b border-neutral-900 pb-3">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 font-mono flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-neutral-500" />
-              Quick Directives console
-            </h3>
-            <p className="text-[11px] text-neutral-500 mt-0.5 font-light">Execute optimized pre-configured scholarly query nodes</p>
-          </div>
+      {/* Right Column: Fast Directives Utilities (span 4) (as per Document 6 sidebar) - Hidden during Deep Focus */}
+      {!isDeepFocus && (
+        <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-850 p-5 rounded-xl flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="border-b border-neutral-900 pb-3">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 font-mono flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-neutral-500" />
+                Quick Directives console
+              </h3>
+              <p className="text-[11px] text-neutral-500 mt-0.5 font-light">Execute optimized pre-configured scholarly query nodes</p>
+            </div>
 
-          <div className="space-y-2.5">
-            {quickDirectives.map((d, dIdx) => (
-              <div 
-                key={dIdx}
-                onClick={() => {
-                  if (!isLoading) {
-                    onSendMessage(d.prompt);
-                  }
-                }}
-                className="p-3 bg-neutral-950/40 border border-neutral-850 hover:border-amber-400/20 rounded-lg cursor-pointer hover:bg-neutral-900/40 transition-all group relative"
-              >
-                <div className="flex justify-between items-start">
-                  <span className="text-xs font-semibold text-white block leading-tight">{d.title}</span>
-                  <ArrowUpRight className="w-3 h-3 text-neutral-600 group-hover:text-amber-400 transition-colors" />
+            <div className="space-y-2.5">
+              {quickDirectives.map((d, dIdx) => (
+                <div 
+                  key={dIdx}
+                  onClick={() => {
+                    if (!isLoading) {
+                      onSendMessage(d.prompt);
+                    }
+                  }}
+                  className="p-3 bg-neutral-950/40 border border-neutral-850 hover:border-amber-400/20 rounded-lg cursor-pointer hover:bg-neutral-900/40 transition-all group relative"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-semibold text-white block leading-tight">{d.title}</span>
+                    <ArrowUpRight className="w-3 h-3 text-neutral-600 group-hover:text-amber-400 transition-colors" />
+                  </div>
+                  <p className="text-[11px] text-neutral-400 font-light mt-1 leading-snug">{d.description}</p>
+                  <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider block mt-1.5 bg-neutral-900/90 font-bold px-1 py-0.5 rounded w-max">
+                    QUERY_NODE_0{dIdx + 1}
+                  </span>
                 </div>
-                <p className="text-[11px] text-neutral-400 font-light mt-1 leading-snug">{d.description}</p>
-                <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-wider block mt-1.5 bg-neutral-900/90 font-bold px-1 py-0.5 rounded w-max">
-                  QUERY_NODE_0{dIdx + 1}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Core Calibration statistics */}
-        <div className="pt-4 border-t border-neutral-905 space-y-2 text-xs font-mono">
-          <div className="flex gap-2 items-center text-neutral-450 text-[10px]">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>ENCRYPTION SYNC CHANNELS ACTIVE</span>
-          </div>
-          <div className="flex gap-2 items-center text-neutral-450 text-[10px]">
-            <HeartPulse className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>RESPONSE COEFFICIENT : EXCELLENT</span>
+          {/* Core Calibration statistics */}
+          <div className="pt-4 border-t border-neutral-905 space-y-2 text-xs font-mono">
+            <div className="flex gap-2 items-center text-neutral-450 text-[10px]">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>ENCRYPTION SYNC CHANNELS ACTIVE</span>
+            </div>
+            <div className="flex gap-2 items-center text-neutral-450 text-[10px]">
+              <HeartPulse className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>RESPONSE COEFFICIENT : EXCELLENT</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
