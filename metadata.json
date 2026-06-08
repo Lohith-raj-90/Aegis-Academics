@@ -1,0 +1,6 @@
+{
+  "name": "Aegis Academics",
+  "description": "An ultra-premium AI-powered student assistant suite featuring a Royal Dashboard, Attendance Forecaster, Strategic Exam Planner, Modern Academic Library, interactive Placement Quizzes, and Aegis Core AI chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
