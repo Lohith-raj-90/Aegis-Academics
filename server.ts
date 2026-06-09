@@ -24,7 +24,7 @@ async function startServer() {
         apiKey: apiKey,
         httpOptions: {
           headers: {
-            "User-Agent": "aistudio-build",
+            "User-Agent": "aegis-academics/lohith-rc",
           },
         },
       });
