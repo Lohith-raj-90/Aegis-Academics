@@ -195,6 +195,10 @@ export default function App() {
     }
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [modelName, setModelName] = useState<string>("GEMINI_3.5_FLASH");
+  const [modelLatency, setModelLatency] = useState<number | null>(35);
+  const [responseFidelity, setResponseFidelity] = useState({ level: "High", percentage: 80 });
+  const [modelMemoryEnabled, setModelMemoryEnabled] = useState<boolean>(true);
   const [activeHighlightKeyword, setActiveHighlightKeyword] = useLocalStorageSecure<string | null>("aegis_highlight_keyword", null);
   
   // Temporal Decay for Shared AI Context: opacity states and animated countdown loop
@@ -354,6 +358,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
 
   // Chat message sender integration (real Express API)
   const handleSendMessage = async (text: string) => {
+    const startTime = Date.now();
     const userMsg: ChatMessage = {
       id: `chat-${Date.now()}`,
       role: "user",
@@ -411,6 +416,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
       
       setChatMessages(prev => [...prev, fallbackMsg]);
     } finally {
+      setModelLatency(Date.now() - startTime);
       setIsChatLoading(false);
     }
   };
@@ -730,6 +736,10 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               onSendMessage={handleSendMessage}
               isLoading={isChatLoading}
               isDeepFocus={isDeepFocus}
+              modelName={modelName}
+              latency={modelLatency}
+              responseFidelity={responseFidelity}
+              modelMemoryEnabled={modelMemoryEnabled}
             />
           )}
         </div>
