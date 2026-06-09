@@ -5,14 +5,37 @@ import { LibraryResource } from "../types";
 interface LibraryViewProps {
   resources: LibraryResource[];
   onToggleSync: (id: string) => void;
+  activeHighlightKeyword?: string | null;
+  onClearHighlightKeyword?: () => void;
 }
 
 export const LibraryView: React.FC<LibraryViewProps> = ({
   resources,
-  onToggleSync
+  onToggleSync,
+  activeHighlightKeyword,
+  onClearHighlightKeyword
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewResource, setPreviewResource] = useState<LibraryResource | null>(resources[0] || null);
+
+  const isHighlightedMatch = (res: LibraryResource, keyword: string | null | undefined) => {
+    if (!keyword) return false;
+    const key = keyword.toLowerCase();
+    
+    if (key === "calculus") {
+      return res.category === "Mathematics" || res.title.toLowerCase().includes("calculus") || res.title.toLowerCase().includes("formula");
+    }
+    if (key === "quantum") {
+      return res.category === "Physics" || res.title.toLowerCase().includes("quantum") || res.title.toLowerCase().includes("circuit");
+    }
+    if (key === "automata") {
+      return res.category === "Computer Science" || res.title.toLowerCase().includes("automata") || res.title.toLowerCase().includes("turing");
+    }
+    if (key === "attendance") {
+      return res.title.toLowerCase().includes("compliance") || res.abstract.toLowerCase().includes("attendance") || res.abstract.toLowerCase().includes("eligibility") || res.title.toLowerCase().includes("ledger");
+    }
+    return false;
+  };
 
   // Filter matching queries
   const filteredResources = resources.filter(res => 
@@ -123,46 +146,58 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
 
           {/* Table list */}
           <div className="space-y-3">
-            {filteredResources.map(res => (
-              <div 
-                key={res.id} 
-                onClick={() => setPreviewResource(res)}
-                className={`p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-4 ${
-                  previewResource?.id === res.id 
-                    ? "bg-neutral-900/80 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.05)]" 
-                    : "bg-neutral-900/40 border-neutral-850 hover:border-neutral-700"
-                }`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-white block">{res.title}</span>
-                    <span className="text-[8px] font-mono px-1 rounded bg-neutral-950 text-neutral-400 border border-neutral-850">
-                      {res.category}
-                    </span>
+            {filteredResources.map(res => {
+              const isMatched = isHighlightedMatch(res, activeHighlightKeyword);
+              return (
+                <div 
+                  key={res.id} 
+                  onClick={() => setPreviewResource(res)}
+                  className={`p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-4 relative overflow-hidden ${
+                    previewResource?.id === res.id 
+                      ? isMatched
+                        ? "bg-amber-400/[0.05] border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                        : "bg-neutral-900/80 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.05)]" 
+                      : isMatched
+                        ? "bg-amber-400/[0.02] border-amber-400/60 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:border-amber-400 animate-pulse"
+                        : "bg-neutral-900/40 border-neutral-850 hover:border-neutral-700"
+                  }`}
+                >
+                  {isMatched && (
+                    <div className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
+                      Interlinked
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-white block">{res.title}</span>
+                      <span className="text-[8px] font-mono px-1 rounded bg-neutral-950 text-neutral-400 border border-neutral-850">
+                        {res.category}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 font-light truncate max-w-sm">
+                      {res.abstract}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-neutral-400 font-light truncate max-w-sm">
-                    {res.abstract}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-[10px] font-mono text-neutral-500">{res.fileSize}</span>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleSync(res.id);
-                    }}
-                    className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-all ${
-                      res.synced 
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20" 
-                        : "bg-neutral-950 text-neutral-300 border border-neutral-850 hover:border-amber-400/40 hover:text-amber-400"
-                    }`}
-                  >
-                    {res.synced ? "SYNCED" : "SYNC"}
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-[10px] font-mono text-neutral-500">{res.fileSize}</span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleSync(res.id);
+                      }}
+                      className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-all ${
+                        res.synced 
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20" 
+                          : "bg-neutral-950 text-neutral-300 border border-neutral-850 hover:border-amber-400/40 hover:text-amber-400"
+                      }`}
+                    >
+                      {res.synced ? "SYNCED" : "SYNC"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {filteredResources.length === 0 && (
               <div className="py-12 text-center text-xs text-neutral-600 font-mono italic">

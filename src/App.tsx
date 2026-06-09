@@ -21,7 +21,7 @@ import { DEFAULT_TASKS, DEFAULT_UNSCHEDULED, LIBRARY_RESOURCES } from "./data";
 // Import custom views
 import { LoginView } from "./components/LoginView";
 import { LandingView } from "./components/LandingView";
-import { DashboardView } from "./components/DashboardView";
+import { DashboardContainer } from "./components/DashboardContainer";
 import { AttendanceView } from "./components/AttendanceView";
 import { PlannerView } from "./components/PlannerView";
 import { LibraryView } from "./components/LibraryView";
@@ -29,14 +29,43 @@ import { QuizView } from "./components/QuizView";
 import { ChatView } from "./components/ChatView";
 import { SmoothCursor } from "./components/SmoothCursor";
 
-// Helper hook for synchronized local storage state rehydration
-function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+// Schema Version constant for safe caching schema migration
+const AEGIS_SCHEMA_VERSION = 2;
+
+// Helper hook for version-controlled state hydration and structural healing
+function useLocalStorageSecure<T>(key: string, initialValue: T, schemaVersion: number = AEGIS_SCHEMA_VERSION): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      const raw = window.localStorage.getItem(key);
+      if (!raw) {
+        return initialValue;
+      }
+      
+      const parsedEnvelope = JSON.parse(raw);
+      
+      // If we have a verified versioned schema envelope
+      if (parsedEnvelope && typeof parsedEnvelope === "object" && "version" in parsedEnvelope && "data" in parsedEnvelope) {
+        if (parsedEnvelope.version === schemaVersion) {
+          return parsedEnvelope.data as T;
+        } else {
+          console.warn(`[Secure Hydrator] Schema version mismatch for key "${key}" (Stored: ${parsedEnvelope.version}, Required: ${schemaVersion}). Executing schema healing migration.`);
+          
+          // Structural healing: If both are objects, merge them to avoid loss of state
+          if (typeof initialValue === "object" && initialValue !== null && typeof parsedEnvelope.data === "object" && parsedEnvelope.data !== null) {
+            return { ...initialValue, ...parsedEnvelope.data } as T;
+          }
+          return initialValue;
+        }
+      }
+      
+      // Upgrade vintage legacy data
+      console.info(`[Secure Hydrator] Elevating legacy unversioned data for key "${key}" into schema envelopes.`);
+      if (typeof initialValue === "object" && initialValue !== null && parsedEnvelope !== null && typeof parsedEnvelope === "object") {
+        return { ...initialValue, ...parsedEnvelope } as T;
+      }
+      return parsedEnvelope as T;
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
+      console.warn(`[Secure Hydrator] Failed reading target key "${key}". Reverting safely to schema fallback:`, error);
       return initialValue;
     }
   });
@@ -45,9 +74,13 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      const envelope = {
+        version: schemaVersion,
+        data: valueToStore
+      };
+      window.localStorage.setItem(key, JSON.stringify(envelope));
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn(`[Secure Hydrator] Failed setting target key "${key}":`, error);
     }
   };
 
@@ -56,18 +89,18 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<Re
 
 export default function App() {
   // Authentication & Layout Routes
-  const [isLoggedIn, setIsLoggedIn] = useLocalStorage("aegis_is_logged_in", false);
+  const [isLoggedIn, setIsLoggedIn] = useLocalStorageSecure("aegis_is_logged_in", false);
   const [isViewingPromo, setIsViewingPromo] = useState(false);
-  const [activeTab, setActiveTab] = useLocalStorage<TabType>("aegis_active_tab", "dashboard");
+  const [activeTab, setActiveTab] = useLocalStorageSecure<TabType>("aegis_active_tab", "dashboard");
 
   // Layout Calibration modes
-  const [isDeepFocus, setIsDeepFocus] = useLocalStorage("aegis_deep_focus_mode", false);
+  const [isDeepFocus, setIsDeepFocus] = useLocalStorageSecure("aegis_deep_focus_mode", false);
 
   // Global Sync States
-  const [username, setUsername] = useLocalStorage("aegis_username", "Lohith R C");
-  const [userEmail, setUserEmail] = useLocalStorage("aegis_user_email", "lohithraj9095@gmail.com");
-  const [attendancePct, setAttendancePct] = useLocalStorage("aegis_attendance_pct", 84);
-  const [readinessScore, setReadinessScore] = useLocalStorage("aegis_readiness_score", 86);
+  const [username, setUsername] = useLocalStorageSecure("aegis_username", "Lohith R C");
+  const [userEmail, setUserEmail] = useLocalStorageSecure("aegis_user_email", "lohithraj9095@gmail.com");
+  const [attendancePct, setAttendancePct] = useLocalStorageSecure("aegis_attendance_pct", 84);
+  const [readinessScore, setReadinessScore] = useLocalStorageSecure("aegis_readiness_score", 86);
 
   // Settings Modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -75,12 +108,12 @@ export default function App() {
   const [settingsEmailInput, setSettingsEmailInput] = useState(userEmail);
 
   // Dynamic lists with persistence hydration
-  const [tasks, setTasks] = useLocalStorage<ExamTask[]>("aegis_tasks", DEFAULT_TASKS);
-  const [unscheduled, setUnscheduled] = useLocalStorage<UnscheduledTarget[]>("aegis_unscheduled", DEFAULT_UNSCHEDULED);
-  const [libraryResources, setLibraryResources] = useLocalStorage<LibraryResource[]>("aegis_library_resources", LIBRARY_RESOURCES);
+  const [tasks, setTasks] = useLocalStorageSecure<ExamTask[]>("aegis_tasks", DEFAULT_TASKS);
+  const [unscheduled, setUnscheduled] = useLocalStorageSecure<UnscheduledTarget[]>("aegis_unscheduled", DEFAULT_UNSCHEDULED);
+  const [libraryResources, setLibraryResources] = useLocalStorageSecure<LibraryResource[]>("aegis_library_resources", LIBRARY_RESOURCES);
 
   // Chat memory persistence
-  const [chatMessages, setChatMessages] = useLocalStorage<ChatMessage[]>("aegis_chat_messages", [
+  const [chatMessages, setChatMessages] = useLocalStorageSecure<ChatMessage[]>("aegis_chat_messages", [
     {
       id: "greet-1",
       role: "assistant",
@@ -95,6 +128,20 @@ export default function App() {
     }
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [activeHighlightKeyword, setActiveHighlightKeyword] = useLocalStorageSecure<string | null>("aegis_highlight_keyword", null);
+
+  const observeKeywords = (input: string) => {
+    const text = input.toLowerCase();
+    if (text.includes("calculus") || text.includes("limit") || text.includes("green") || text.includes("fourier") || text.includes("math") || text.includes("integral") || text.includes("coordinate")) {
+      setActiveHighlightKeyword("Calculus");
+    } else if (text.includes("quantum") || text.includes("schrodinger") || text.includes("qubit") || text.includes("circuits") || text.includes("superposition") || text.includes("physics") || text.includes("gate")) {
+      setActiveHighlightKeyword("Quantum");
+    } else if (text.includes("np") || text.includes("halt") || text.includes("automata") || text.includes("turing") || text.includes("tape") || text.includes("languages") || text.includes("reduc")) {
+      setActiveHighlightKeyword("Automata");
+    } else if (text.includes("attendance") || text.includes("vtu") || text.includes("clearance") || text.includes("hours")) {
+      setActiveHighlightKeyword("Attendance");
+    }
+  };
 
   // Sign-in callback
   const handleLoginSuccess = (email: string) => {
@@ -216,6 +263,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
       timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
     };
 
+    observeKeywords(text);
     setChatMessages(prev => [...prev, userMsg]);
     setIsChatLoading(true);
 
@@ -248,11 +296,13 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
         timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
       };
 
+      observeKeywords(assistantMsg.content);
       setChatMessages(prev => [...prev, assistantMsg]);
     } catch (e) {
       console.warn("Server Endpoint offline. Deploying scholarly Offline Fallback Buffer:", e);
       
       const fallbackText = getLocalFallbackResponse(text);
+      observeKeywords(fallbackText);
       
       const fallbackMsg: ChatMessage = {
         id: `chat-${Date.now()}-fallback`,
@@ -473,6 +523,20 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             <span className="font-mono text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-400 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
               {activeTab.toUpperCase()}_STAGE
             </span>
+            {activeHighlightKeyword && (
+              <span className="animate-pulse flex items-center gap-1.5 font-mono text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full select-none">
+                <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping" />
+                LINKED: {activeHighlightKeyword.toUpperCase()}
+                <button
+                  type="button"
+                  onClick={() => setActiveHighlightKeyword(null)}
+                  className="ml-1 text-zinc-400 hover:text-white font-bold cursor-pointer transition-colors"
+                  title="Clear linked context"
+                >
+                  ✕
+                </button>
+              </span>
+            )}
           </div>
 
           {/* Interactive Layout Mode Switcher */}
@@ -509,7 +573,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
         {/* Primary View content with scrollable wrapper */}
         <div className="flex-1 p-8 overflow-y-auto">
           {activeTab === "dashboard" && (
-            <DashboardView 
+            <DashboardContainer 
               onNavigateToTab={setActiveTab}
               attendancePct={attendancePct}
               completedTasksCount={completedTasksCount}
@@ -517,6 +581,8 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               readinessScore={readinessScore}
               username={username}
               isDeepFocus={isDeepFocus}
+              activeHighlightKeyword={activeHighlightKeyword}
+              onClearHighlightKeyword={() => setActiveHighlightKeyword(null)}
             />
           )}
 
@@ -543,6 +609,8 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             <LibraryView 
               resources={libraryResources}
               onToggleSync={handleToggleLibrarySync}
+              activeHighlightKeyword={activeHighlightKeyword}
+              onClearHighlightKeyword={() => setActiveHighlightKeyword(null)}
             />
           )}
 

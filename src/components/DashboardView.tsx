@@ -34,6 +34,8 @@ interface DashboardViewProps {
   readinessScore: number;
   username: string;
   isDeepFocus?: boolean;
+  activeHighlightKeyword?: string | null;
+  onClearHighlightKeyword?: () => void;
 }
 
 // Structured Mock Subjects for stateful masteries
@@ -54,7 +56,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   totalTasksCount,
   readinessScore: initialReadiness,
   username,
-  isDeepFocus = false
+  isDeepFocus = false,
+  activeHighlightKeyword,
+  onClearHighlightKeyword
 }) => {
   // 1. STATEFUL: Active Simulated Lecture Simulator
   const [sessionLecturesSkipped, setSessionLecturesSkipped] = useState<number>(0);
@@ -478,16 +482,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {subjects.map((sub) => {
               const isActive = sub.id === activeSubjectId;
+              const isMatched = activeHighlightKeyword && (
+                (activeHighlightKeyword.toLowerCase() === "calculus" && sub.id === "calc-101") ||
+                (activeHighlightKeyword.toLowerCase() === "quantum" && sub.id === "quant-45") ||
+                (activeHighlightKeyword.toLowerCase() === "automata" && sub.id === "aut-99")
+              );
               return (
                 <button
                   key={sub.id}
                   onClick={() => setActiveSubjectId(sub.id)}
-                  className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                  className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all relative overflow-hidden ${
                     isActive 
-                      ? "bg-amber-400/[0.04] border-amber-400/30 text-white shadow-lg" 
-                      : "bg-transparent border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white"
+                      ? isMatched
+                        ? "bg-amber-400/[0.08] border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)] text-white"
+                        : "bg-amber-400/[0.04] border-amber-400/30 text-white shadow-lg" 
+                      : isMatched
+                        ? "bg-amber-400/[0.02] border-amber-450/70 shadow-[0_0_12px_rgba(245,158,11,0.15)] text-white animate-pulse"
+                        : "bg-transparent border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white"
                   }`}
                 >
+                  {isMatched && (
+                    <span className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
+                      Linked
+                    </span>
+                  )}
                   <span className="font-mono text-[9px] text-zinc-500 block uppercase tracking-wider">{sub.code}</span>
                   <span className="font-sans font-medium text-xs block leading-tight mt-1 truncate">{sub.name}</span>
                   <div className="flex items-center justify-between mt-3 text-[10px] font-mono">

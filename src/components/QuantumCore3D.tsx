@@ -1,4 +1,48 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+
+// Performance energy saver sleep throttler hook
+export function useKineticThrottler(
+  lastInteractionRef: React.MutableRefObject<number>,
+  isDraggingRef: React.MutableRefObject<boolean>,
+  velocitiesRef: React.MutableRefObject<{ x: number; y: number }>,
+  options: { minVelocity: number; idleTimeoutMs: number }
+) {
+  const [isAsleep, setIsAsleep] = useState(false);
+
+  const checkEnergyState = useCallback(() => {
+    const timeSinceActive = Date.now() - lastInteractionRef.current;
+    const omega = Math.sqrt(
+      velocitiesRef.current.x * velocitiesRef.current.x +
+      velocitiesRef.current.y * velocitiesRef.current.y
+    );
+
+    if (isDraggingRef.current) {
+      if (isAsleep) setIsAsleep(false);
+      return { asleep: false, omega };
+    }
+
+    if (timeSinceActive > options.idleTimeoutMs && omega < options.minVelocity) {
+      if (!isAsleep) {
+        setIsAsleep(true);
+      }
+      return { asleep: true, omega };
+    }
+
+    if (isAsleep) {
+      setIsAsleep(false);
+    }
+    return { asleep: false, omega };
+  }, [isAsleep, options.idleTimeoutMs, options.minVelocity]);
+
+  const wakeUp = useCallback(() => {
+    lastInteractionRef.current = Date.now();
+    if (isAsleep) {
+      setIsAsleep(false);
+    }
+  }, [isAsleep]);
+
+  return { isAsleep, checkEnergyState, wakeUp };
+}
 
 interface Point3D {
   x: number;
@@ -59,6 +103,14 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
   const dragStart = useRef({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
   const mousePos = useRef({ x: -1000, y: -1000 });
+  const lastInteraction = useRef<number>(Date.now());
+
+  const { isAsleep, checkEnergyState, wakeUp } = useKineticThrottler(
+    lastInteraction,
+    isDragging,
+    velocities,
+    { minVelocity: 0.005, idleTimeoutMs: 8000 }
+  );
 
   // Mode Specific Geometry Data Refs
   const pointsManifold = useRef<Point3D[]>([]);
@@ -300,12 +352,33 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     let animId: number;
 
     const render = () => {
+      const cx = size / 2;
+      const cy = size / 2;
+
+      // Check passive energy sleep thresholds
+      const { asleep } = checkEnergyState();
+
+      if (asleep) {
+        if (telemetryTag !== "PASSIVE_SLEEP") {
+          setTelemetryTag("PASSIVE_SLEEP");
+        }
+        
+        ctx.fillStyle = "rgba(5, 5, 5, 0.45)";
+        ctx.fillRect(0, 0, size, size);
+        
+        // Render still text overlay indicating sleep standby state
+        ctx.fillStyle = "rgba(10, 10, 10, 0.75)";
+        ctx.fillRect(10, size - 35, size - 20, 25);
+        ctx.font = "8px monospace";
+        ctx.fillStyle = "#a1a1aa";
+        ctx.textAlign = "center";
+        ctx.fillText("● MODULE_STANDBY // ω < 0.005", cx, size - 19);
+        return; // Halt render loop cycles entirely! Conserves CPU/battery.
+      }
+
       // Clear with elegant translucent fade for visual tail blur matching Image designs
       ctx.fillStyle = "rgba(5, 5, 5, 0.2)";
       ctx.fillRect(0, 0, size, size);
-
-      const cx = size / 2;
-      const cy = size / 2;
 
       // Dynamic Gamification multipliers
       // Higher readiness score -> faster rotation speed
@@ -315,9 +388,16 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
       const starsToRenderCount = Math.min(stars.current.length, Math.floor(12 + (studyVelocity / 60) * 33));
 
       // Drag inertia drift updates
+      const timeSinceActive = Date.now() - lastInteraction.current;
       if (!isDragging.current) {
-        velocities.current.x += (0.002 * speedMultiplier - velocities.current.x) * 0.05;
-        velocities.current.y += (0.003 * speedMultiplier - velocities.current.y) * 0.05;
+        if (timeSinceActive > 8000) {
+          // decay velocities towards sleep state
+          velocities.current.x *= 0.95;
+          velocities.current.y *= 0.95;
+        } else {
+          velocities.current.x += (0.002 * speedMultiplier - velocities.current.x) * 0.05;
+          velocities.current.y += (0.003 * speedMultiplier - velocities.current.y) * 0.05;
+        }
         angles.current.x += velocities.current.x;
         angles.current.y += velocities.current.y;
       } else {
@@ -709,16 +789,23 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     render();
 
     return () => cancelAnimationFrame(animId);
-  }, [size, activeMode, telemetryTag]);
+  }, [size, activeMode, telemetryTag, isAsleep]);
+
+  // Wake on mode change or dynamic inputs
+  useEffect(() => {
+    wakeUp();
+  }, [activeMode, size, readinessScore, studyVelocity]);
 
   // Drag interaction handler
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    wakeUp();
     isDragging.current = true;
     dragStart.current = { x: e.clientX, y: e.clientY };
     dragOffset.current = { x: angles.current.y, y: angles.current.x };
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    wakeUp();
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -741,6 +828,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
   };
 
   const handleMouseLeaveOrUp = () => {
+    wakeUp();
     isDragging.current = false;
     mousePos.current = { x: -1000, y: -1000 };
   };
