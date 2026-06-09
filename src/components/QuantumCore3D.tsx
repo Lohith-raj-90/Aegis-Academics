@@ -94,6 +94,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
   studyVelocity = 35,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [activeMode, setActiveMode] = useState<ModeType>("helios");
 
   // WebGL rotators & drag handles
@@ -111,6 +112,47 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     velocities,
     { minVelocity: 0.005, idleTimeoutMs: 8000 }
   );
+
+  const [isElementVisible, setIsElementVisible] = useState(true);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+
+  // Viewport Exit Interceptor: Track when canvas element enters or leaves the user's focus
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsElementVisible(entry.isIntersecting);
+        if (entry.isIntersecting) {
+          wakeUp();
+        }
+      },
+      { threshold: 0.01 }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [wakeUp]);
+
+  // Tab Minimize Interceptor: Track document.visibilityState to pause background requests
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const active = document.visibilityState !== "hidden";
+      setIsTabVisible(active);
+      if (active) {
+        wakeUp();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [wakeUp]);
 
   // Mode Specific Geometry Data Refs
   const pointsManifold = useRef<Point3D[]>([]);
@@ -352,6 +394,11 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     let animId: number;
 
     const render = () => {
+      // Viewport Exit Interceptor: Term some frame repaint threads when hidden or off-screen
+      if (!isElementVisible || !isTabVisible) {
+        return; // Terminate frame loop entirely to reclaim 100% idle background browser execution threads
+      }
+
       const cx = size / 2;
       const cy = size / 2;
 
@@ -789,7 +836,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     render();
 
     return () => cancelAnimationFrame(animId);
-  }, [size, activeMode, telemetryTag, isAsleep]);
+  }, [size, activeMode, telemetryTag, isAsleep, isElementVisible, isTabVisible]);
 
   // Wake on mode change or dynamic inputs
   useEffect(() => {
@@ -834,7 +881,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
   };
 
   return (
-    <div className="relative flex flex-col items-center select-none">
+    <div ref={containerRef} className="relative flex flex-col items-center select-none">
       
       {/* 3D Console Segment Selector (Mode swappers toggling the images seamlessly) */}
       <div className="flex gap-1.5 p-1 bg-neutral-950/80 border border-neutral-850 rounded-lg text-[9px] font-mono mb-4 w-full justify-between shadow-lg relative z-25">
@@ -883,6 +930,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseLeaveOrUp}
           onMouseLeave={handleMouseLeaveOrUp}
+          style={{ willChange: "transform", transform: "translate3d(0,0,0)" }}
           className="rounded-full shadow-2xl transition-all duration-300 hover:scale-[1.01]"
         />
 

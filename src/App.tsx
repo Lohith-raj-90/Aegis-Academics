@@ -32,6 +32,77 @@ import { SmoothCursor } from "./components/SmoothCursor";
 // Schema Version constant for safe caching schema migration
 const AEGIS_SCHEMA_VERSION = 2;
 
+// Deep recursive validation check comparing cached structures against blueprint templates
+function verifyAndReconcileTypes(cached: any, blueprint: any, contextPath: string = "root"): any {
+  // Defensive check for primitive types or null/undefined blueprints
+  if (blueprint === null || blueprint === undefined) {
+    return cached;
+  }
+  if (cached === null || cached === undefined) {
+    console.info(`[Self-Healing] Restoring defaulted sub-property at "${contextPath}".`);
+    return JSON.parse(JSON.stringify(blueprint));
+  }
+
+  const blueprintType = typeof blueprint;
+  const cachedType = typeof cached;
+
+  // Handle arrays
+  if (Array.isArray(blueprint)) {
+    if (!Array.isArray(cached)) {
+      console.warn(`[Self-Healing] Structural type mismatch at "${contextPath}". Expected Array, received "${cachedType}". Safe fallback deployed.`);
+      return JSON.parse(JSON.stringify(blueprint));
+    }
+    
+    // Arrays elements type evaluation: check items if blueprint contains a template row entry
+    if (blueprint.length > 0) {
+      const templateItem = blueprint[0];
+      return cached.map((element: any, index: number) => 
+        verifyAndReconcileTypes(element, templateItem, `${contextPath}[${index}]`)
+      );
+    }
+    return cached;
+  }
+
+  // Handle objects
+  if (blueprintType === "object") {
+    if (cachedType !== "object" || Array.isArray(cached)) {
+      console.warn(`[Self-Healing] Structural type mismatch at "${contextPath}". Expected Object, received "${cachedType}". Resetting sub-property.`);
+      return JSON.parse(JSON.stringify(blueprint));
+    }
+
+    const reconciled: any = { ...cached };
+    
+    // Check all template fields
+    for (const key of Object.keys(blueprint)) {
+      if (!(key in reconciled)) {
+        console.info(`[Self-Healing] Context expansion: Appending missing key "${key}" under "${contextPath}".`);
+        reconciled[key] = JSON.parse(JSON.stringify(blueprint[key]));
+      } else {
+        // Deep recursive matching for field properties
+        reconciled[key] = verifyAndReconcileTypes(reconciled[key], blueprint[key], `${contextPath}.${key}`);
+      }
+    }
+
+    // Purge outdated properties that are not present in current factory configurations
+    for (const key of Object.keys(reconciled)) {
+      if (!(key in blueprint)) {
+        console.info(`[Self-Healing] Cleared deprecated key "${key}" from storage.`);
+        delete reconciled[key];
+      }
+    }
+
+    return reconciled;
+  }
+
+  // Handle Primitives (number, string, boolean)
+  if (blueprintType !== cachedType) {
+    console.warn(`[Self-Healing] Type mismatch at "${contextPath}". Expected "${blueprintType}", received "${cachedType}". Resetting property value.`);
+    return blueprint;
+  }
+
+  return cached;
+}
+
 // Helper hook for version-controlled state hydration and structural healing
 function useLocalStorageSecure<T>(key: string, initialValue: T, schemaVersion: number = AEGIS_SCHEMA_VERSION): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -43,27 +114,23 @@ function useLocalStorageSecure<T>(key: string, initialValue: T, schemaVersion: n
       
       const parsedEnvelope = JSON.parse(raw);
       
-      // If we have a verified versioned schema envelope
+      // Self-Healing Data Recovery Layer Active
+      let unpackedData: any = parsedEnvelope;
+      
       if (parsedEnvelope && typeof parsedEnvelope === "object" && "version" in parsedEnvelope && "data" in parsedEnvelope) {
         if (parsedEnvelope.version === schemaVersion) {
-          return parsedEnvelope.data as T;
+          unpackedData = parsedEnvelope.data;
         } else {
-          console.warn(`[Secure Hydrator] Schema version mismatch for key "${key}" (Stored: ${parsedEnvelope.version}, Required: ${schemaVersion}). Executing schema healing migration.`);
-          
-          // Structural healing: If both are objects, merge them to avoid loss of state
-          if (typeof initialValue === "object" && initialValue !== null && typeof parsedEnvelope.data === "object" && parsedEnvelope.data !== null) {
-            return { ...initialValue, ...parsedEnvelope.data } as T;
-          }
-          return initialValue;
+          console.warn(`[Secure Hydrator] Schema version mismatch for key "${key}" (Stored: ${parsedEnvelope.version}, Required: ${schemaVersion}). Initiating recursive healing.`);
+          unpackedData = parsedEnvelope.data;
         }
+      } else {
+        // Handle retro vintage stored structures (upgrade gracefully)
+        console.info(`[Secure Hydrator] Elevating legacy unversioned data for key "${key}" into schema envelopes.`);
       }
       
-      // Upgrade vintage legacy data
-      console.info(`[Secure Hydrator] Elevating legacy unversioned data for key "${key}" into schema envelopes.`);
-      if (typeof initialValue === "object" && initialValue !== null && parsedEnvelope !== null && typeof parsedEnvelope === "object") {
-        return { ...initialValue, ...parsedEnvelope } as T;
-      }
-      return parsedEnvelope as T;
+      // Perform deep-dive type validation check to guarantee runtime type safety and prevent crashes
+      return verifyAndReconcileTypes(unpackedData, initialValue, key) as T;
     } catch (error) {
       console.warn(`[Secure Hydrator] Failed reading target key "${key}". Reverting safely to schema fallback:`, error);
       return initialValue;
@@ -129,6 +196,37 @@ export default function App() {
   ]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [activeHighlightKeyword, setActiveHighlightKeyword] = useLocalStorageSecure<string | null>("aegis_highlight_keyword", null);
+  
+  // Temporal Decay for Shared AI Context: opacity states and animated countdown loop
+  const [highlightOpacity, setHighlightOpacity] = useState(1);
+
+  React.useEffect(() => {
+    if (!activeHighlightKeyword) {
+      setHighlightOpacity(0);
+      return;
+    }
+
+    // Reset indicator opacity to 100% on active trigger or keyword shift
+    setHighlightOpacity(1);
+
+    const startTime = Date.now();
+    const duration = 60000; // 60 seconds fading duration window
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remainingProgress = Math.max(0, 1 - elapsed / duration);
+      
+      setHighlightOpacity(remainingProgress);
+
+      if (remainingProgress <= 0) {
+        clearInterval(interval);
+        // Cleanly restore standard presentation state once fully faded
+        setActiveHighlightKeyword(null);
+      }
+    }, 200); // 200ms ticks for fluid sub-second visual performance adjustments
+
+    return () => clearInterval(interval);
+  }, [activeHighlightKeyword]);
 
   const observeKeywords = (input: string) => {
     const text = input.toLowerCase();
@@ -524,7 +622,10 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               {activeTab.toUpperCase()}_STAGE
             </span>
             {activeHighlightKeyword && (
-              <span className="animate-pulse flex items-center gap-1.5 font-mono text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full select-none">
+              <span 
+                style={{ opacity: highlightOpacity, transition: "opacity 0.2s ease-out" }}
+                className="animate-pulse flex items-center gap-1.5 font-mono text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full select-none"
+              >
                 <span className="w-1 h-1 rounded-full bg-amber-400 animate-ping" />
                 LINKED: {activeHighlightKeyword.toUpperCase()}
                 <button
@@ -582,6 +683,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               username={username}
               isDeepFocus={isDeepFocus}
               activeHighlightKeyword={activeHighlightKeyword}
+              highlightOpacity={highlightOpacity}
               onClearHighlightKeyword={() => setActiveHighlightKeyword(null)}
             />
           )}
@@ -610,6 +712,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               resources={libraryResources}
               onToggleSync={handleToggleLibrarySync}
               activeHighlightKeyword={activeHighlightKeyword}
+              highlightOpacity={highlightOpacity}
               onClearHighlightKeyword={() => setActiveHighlightKeyword(null)}
             />
           )}

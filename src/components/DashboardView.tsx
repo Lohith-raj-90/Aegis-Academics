@@ -35,6 +35,7 @@ interface DashboardViewProps {
   username: string;
   isDeepFocus?: boolean;
   activeHighlightKeyword?: string | null;
+  highlightOpacity?: number;
   onClearHighlightKeyword?: () => void;
 }
 
@@ -58,6 +59,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   username,
   isDeepFocus = false,
   activeHighlightKeyword,
+  highlightOpacity,
   onClearHighlightKeyword
 }) => {
   // 1. STATEFUL: Active Simulated Lecture Simulator
@@ -467,7 +469,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Subjects & Curriculum Mastery Matrix */}
-        <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl space-y-5 transition-all duration-300`}>
+        <motion.div 
+          layout="position"
+          className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl space-y-5 transition-all duration-300`}
+        >
           <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
             <div>
               <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
@@ -487,31 +492,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 (activeHighlightKeyword.toLowerCase() === "quantum" && sub.id === "quant-45") ||
                 (activeHighlightKeyword.toLowerCase() === "automata" && sub.id === "aut-99")
               );
+              
+              // Temporal Decay for Shared AI Context style configuration
+              const currentOpacity = highlightOpacity !== undefined ? highlightOpacity : 1;
+              const dynamicStyles = isMatched ? {
+                borderColor: `rgba(245, 158, 11, ${isActive ? 1 * currentOpacity : 0.6 * currentOpacity})`,
+                boxShadow: `0 0 15px rgba(245, 158, 11, ${0.2 * currentOpacity})`,
+                transition: "border-color 0.2s ease-out, box-shadow 0.2s ease-out",
+                opacity: 0.3 + 0.7 * currentOpacity
+              } : undefined;
+
               return (
                 <button
                   key={sub.id}
                   onClick={() => setActiveSubjectId(sub.id)}
+                  style={dynamicStyles}
                   className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all relative overflow-hidden ${
                     isActive 
                       ? isMatched
-                        ? "bg-amber-400/[0.08] border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)] text-white"
+                        ? "bg-amber-400/[0.08] text-white"
                         : "bg-amber-400/[0.04] border-amber-400/30 text-white shadow-lg" 
                       : isMatched
-                        ? "bg-amber-400/[0.02] border-amber-450/70 shadow-[0_0_12px_rgba(245,158,11,0.15)] text-white animate-pulse"
+                        ? "bg-amber-400/[0.02] text-white animate-pulse"
                         : "bg-transparent border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white"
                   }`}
                 >
                   {isMatched && (
-                    <span className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
+                    <span 
+                      style={{ opacity: currentOpacity }}
+                      className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider"
+                    >
                       Linked
                     </span>
                   )}
-                  <span className="font-mono text-[9px] text-zinc-500 block uppercase tracking-wider">{sub.code}</span>
-                  <span className="font-sans font-medium text-xs block leading-tight mt-1 truncate">{sub.name}</span>
-                  <div className="flex items-center justify-between mt-3 text-[10px] font-mono">
+                  <motion.span layout="position" className="font-mono text-[9px] text-zinc-500 block uppercase tracking-wider">{sub.code}</motion.span>
+                  <motion.span layout="position" className="font-sans font-medium text-xs block leading-tight mt-1 truncate">{sub.name}</motion.span>
+                  <motion.div layout="position" className="flex items-center justify-between mt-3 text-[10px] font-mono">
                     <span className="text-zinc-500">Mastery</span>
                     <span className={isActive ? "text-amber-400 font-bold" : "text-zinc-400"}>{sub.masteryPct}%</span>
-                  </div>
+                  </motion.div>
                 </button>
               );
             })}
@@ -585,47 +604,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
           </div>
-        </div>
+        </motion.div>
 
         {/* Real-Time Live Activity Streams - hidden during Deep Focus */}
-        {!isDeepFocus && (
-          <div className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
-                <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-indigo-400" />
-                  Activity Timeline
-                </h3>
-                <span className="text-[10px] font-mono text-zinc-500">LIVE FEED</span>
-              </div>
+        <AnimatePresence mode="popLayout">
+          {!isDeepFocus && (
+            <motion.div 
+              layout="position"
+              initial={{ opacity: 0, scale: 0.95, filter: "blur(6px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.95, filter: "blur(6px)" }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="lg:col-span-4 bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-2xl flex flex-col justify-between"
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
+                  <h3 className="text-base font-semibold text-white flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-indigo-400" />
+                    Activity Timeline
+                  </h3>
+                  <span className="text-[10px] font-mono text-zinc-500">LIVE FEED</span>
+                </div>
 
-              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-                {localLogs.map((log) => (
-                  <div key={log.id} className="p-2.5 bg-zinc-900/35 border border-zinc-900/60 rounded-xl space-y-1 hover:border-zinc-800 transition-colors">
-                    <div className="flex justify-between items-center">
-                      <span className="font-mono text-[9px] text-zinc-500">{log.time}</span>
-                      <span className={`text-[8px] font-mono px-1 rounded uppercase tracking-wider ${
-                        log.type === "success" 
-                          ? "bg-green-500/10 text-green-400 border border-green-500/10" 
-                          : log.type === "warning"
-                          ? "bg-red-500/10 text-red-400 border border-red-500/10"
-                          : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/10"
-                      }`}>
-                        {log.type}
-                      </span>
+                <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                  {localLogs.map((log) => (
+                    <div key={log.id} className="p-2.5 bg-zinc-900/35 border border-zinc-900/60 rounded-xl space-y-1 hover:border-zinc-800 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <span className="font-mono text-[9px] text-zinc-500">{log.time}</span>
+                        <span className={`text-[8px] font-mono px-1 rounded uppercase tracking-wider ${
+                          log.type === "success" 
+                            ? "bg-green-500/10 text-green-400 border border-green-500/10" 
+                            : log.type === "warning"
+                            ? "bg-red-500/10 text-red-400 border border-red-500/10"
+                            : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/10"
+                        }`}>
+                          {log.type}
+                        </span>
+                      </div>
+                      <p className="text-zinc-200 text-xs font-light leading-snug">{log.text}</p>
                     </div>
-                    <p className="text-zinc-200 text-xs font-light leading-snug">{log.text}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="pt-4 mt-4 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
-              <span>SECURE SYSTEM FLUSH</span>
-              <span className="text-zinc-400 text-[9px]">UTC STATUS = OK</span>
-            </div>
-          </div>
-        )}
+              <div className="pt-4 mt-4 border-t border-zinc-900 flex justify-between items-center text-[10px] font-mono text-zinc-500">
+                <span>SECURE SYSTEM FLUSH</span>
+                <span className="text-zinc-400 text-[9px]">UTC STATUS = OK</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
 

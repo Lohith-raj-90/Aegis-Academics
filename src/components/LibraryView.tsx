@@ -6,6 +6,7 @@ interface LibraryViewProps {
   resources: LibraryResource[];
   onToggleSync: (id: string) => void;
   activeHighlightKeyword?: string | null;
+  highlightOpacity?: number;
   onClearHighlightKeyword?: () => void;
 }
 
@@ -13,6 +14,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
   resources,
   onToggleSync,
   activeHighlightKeyword,
+  highlightOpacity,
   onClearHighlightKeyword
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,22 +150,35 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
           <div className="space-y-3">
             {filteredResources.map(res => {
               const isMatched = isHighlightedMatch(res, activeHighlightKeyword);
+              
+              const currentOpacity = highlightOpacity !== undefined ? highlightOpacity : 1;
+              const dynamicRowStyles = isMatched ? {
+                borderColor: `rgba(245, 158, 11, ${currentOpacity})`,
+                boxShadow: `0 0 10px rgba(245, 158, 11, ${0.1 * currentOpacity})`,
+                transition: "border-color 0.2s ease-out, box-shadow 0.2s ease-out",
+                opacity: 0.3 + 0.7 * currentOpacity
+              } : undefined;
+
               return (
                 <div 
                   key={res.id} 
                   onClick={() => setPreviewResource(res)}
+                  style={dynamicRowStyles}
                   className={`p-4 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-4 relative overflow-hidden ${
                     previewResource?.id === res.id 
                       ? isMatched
-                        ? "bg-amber-400/[0.05] border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                        ? "bg-amber-400/[0.05]"
                         : "bg-neutral-900/80 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.05)]" 
                       : isMatched
-                        ? "bg-amber-400/[0.02] border-amber-400/60 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:border-amber-400 animate-pulse"
+                        ? "bg-amber-400/[0.02] animate-pulse"
                         : "bg-neutral-900/40 border-neutral-850 hover:border-neutral-700"
                   }`}
                 >
                   {isMatched && (
-                    <div className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider">
+                    <div 
+                      style={{ opacity: currentOpacity }}
+                      className="absolute top-0 right-0 bg-amber-400 text-neutral-950 font-mono text-[7px] font-bold px-1.5 py-0.5 rounded-bl uppercase tracking-wider"
+                    >
                       Interlinked
                     </div>
                   )}
