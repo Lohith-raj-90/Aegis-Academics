@@ -3,6 +3,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { seedDatabase } from "./src/server/seed.js";
+import { createAuthRouter } from "./src/server/routes.js";
 
 dotenv.config();
 
@@ -11,6 +13,21 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  seedDatabase();
+
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  const authRouter = createAuthRouter();
+  app.use(authRouter);
 
   // Safe lazy initializer for Gemini Client
   let aiClient: GoogleGenAI | null = null;

@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle, Plus, Trash2, CalendarDays, ShieldAlert, Sparkles, Smile, Frown } from "lucide-react";
 
-interface AttendanceViewProps {
-  currentAttendance: number;
-  onUpdateAttendance: (newPct: number) => void;
-}
-
 interface LedgerEntry {
   id: string;
   subject: string;
@@ -21,7 +16,6 @@ const SUBJECT_LIST = [
   "Formal Automata (CS-305)",
 ];
 
-// Initial pre-populated diagnostic entries to match 84% starting point
 const DEFAULT_LEDGER: LedgerEntry[] = [
   { id: "log-1", subject: "Advanced Calculus (MA-301)", date: "2026-06-01", status: "Attended" },
   { id: "log-2", subject: "Advanced Calculus (MA-301)", date: "2026-06-02", status: "Attended" },
@@ -42,60 +36,41 @@ const DEFAULT_LEDGER: LedgerEntry[] = [
   { id: "log-17", subject: "Formal Automata (CS-305)", date: "2026-06-03", status: "Attended" },
 ];
 
+interface AttendanceViewProps {
+  currentAttendance: number;
+  onUpdateAttendance: (newPct: number) => void;
+}
+
 export const AttendanceView: React.FC<AttendanceViewProps> = ({
   currentAttendance,
   onUpdateAttendance,
 }) => {
-  // Try loading from localStorage first to maintain high fidelity
-  const [ledger, setLedger] = useState<LedgerEntry[]>(() => {
-    try {
-      const saved = window.localStorage.getItem("aegis_attendance_ledger");
-      return saved ? JSON.parse(saved) : DEFAULT_LEDGER;
-    } catch {
-      return DEFAULT_LEDGER;
-    }
-  });
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [skipSimulations, setSkipSimulations] = useState<Record<string, number>>({});
 
-  // Entry Form States
   const [selectedSubject, setSelectedSubject] = useState(SUBJECT_LIST[0]);
   const [selectedStatus, setSelectedStatus] = useState<LedgerEntry["status"]>("Attended");
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
 
-  // Simulator skip overrides state
-  const [skipSimulations, setSkipSimulations] = useState<Record<string, number>>(() => {
+  useEffect(() => {
     const initial: Record<string, number> = {};
     SUBJECT_LIST.forEach((sub) => {
       initial[sub] = 0;
     });
-    return initial;
-  });
+    setSkipSimulations(initial);
+    setLedger(DEFAULT_LEDGER);
+  }, []);
 
-  // Track state persistence
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("aegis_attendance_ledger", JSON.stringify(ledger));
-    } catch (e) {
-      console.error("Local storage sync error", e);
-    }
-  }, [ledger]);
-
-  // Derive counts per subject
   const getSubjectMetrics = (subject: string) => {
     const entries = ledger.filter((item) => item.subject === subject);
     
     let totalConducted = entries.length;
-    // Waived logic: Count as conducted, but Duty Leaves count positively
     let totalAttended = entries.filter((item) => item.status === "Attended").length;
     let dutyLeaves = entries.filter((item) => item.status === "Duty Leave").length;
-
-    // In many schools, Duty Leave is either ignored or counted as fully attended.
-    // Let's count them as attended to avoid penalizing hard-working students of Aegis.
     totalAttended += dutyLeaves;
 
-    // Future predicted skips for simulation
     const simulatedSkips = skipSimulations[subject] || 0;
     const simulatedConducted = totalConducted + simulatedSkips;
-    // Future skips don't change attended count, but increase total conducted sessions to simulate missing upcoming ones
     const simulatedAttended = totalAttended;
 
     const realPercentage = totalConducted > 0 ? Math.round((totalAttended / totalConducted) * 100) : 100;
@@ -112,11 +87,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     };
   };
 
-  // Overall statistics calculation
   const overallMetrics = () => {
     let grandConducted = 0;
     let grandAttended = 0;
-
     let grandConductedSim = 0;
     let grandAttendedSim = 0;
 
@@ -124,7 +97,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       const metrics = getSubjectMetrics(sub);
       grandConducted += metrics.totalConducted;
       grandAttended += metrics.totalAttended;
-
       grandConductedSim += metrics.totalConducted + metrics.simulatedSkips;
       grandAttendedSim += metrics.totalAttended;
     });
@@ -143,12 +115,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const metrics = overallMetrics();
   const overallSimulated = metrics.simulatedAverage;
 
-  // Propagate core calculated value back to central App hub container state
   useEffect(() => {
     onUpdateAttendance(overallSimulated);
   }, [overallSimulated, onUpdateAttendance]);
 
-  // Handler to add ledger entry
   const handleAddEntry = (e: React.FormEvent) => {
     e.preventDefault();
     const newEntry: LedgerEntry = {
@@ -160,12 +130,10 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     setLedger((prev) => [newEntry, ...prev]);
   };
 
-  // Handler to remove ledger entry
   const handleDeleteEntry = (id: string) => {
     setLedger((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Slider simulator updates
   const handleUpdateSimSkips = (subject: string, value: number) => {
     setSkipSimulations((prev) => ({
       ...prev,
@@ -173,7 +141,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     }));
   };
 
-  // Reset simulator values
   const handleResetSimulations = () => {
     const neutral: Record<string, number> = {};
     SUBJECT_LIST.forEach((sub) => {
@@ -182,15 +149,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     setSkipSimulations(neutral);
   };
 
-  // SVG Radial constants
   const radius = 64;
   const circumference = 2 * Math.PI * radius;
   const forecastOffset = circumference - (overallSimulated / 100) * circumference;
-  const isSafe = overallSimulated >= 75; // VTU Mandate code
+  const isSafe = overallSimulated >= 75;
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Dynamic Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-500">Live Attendance Matriculation</span>
@@ -208,11 +173,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        
-        {/* SIDE ACTIONS: Log Class session panel */}
         <div className="xl:col-span-4 flex flex-col gap-6">
-          
-          {/* Quick Logging form */}
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
             <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5 border-b border-neutral-850 pb-3">
               <CalendarDays className="w-4 h-4 text-emerald-400" />
@@ -269,16 +230,14 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             </form>
           </div>
 
-          {/* Quick Stats overview panel */}
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 flex flex-col justify-between overflow-hidden relative">
-            <div className="border-b border-neutral-85pb pb-3">
+            <div className="border-b border-neutral-850 pb-3">
               <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5">
                 <ShieldAlert className="w-4 h-4 text-amber-500" />
                 VERDICT_METEOROLOGY
               </h3>
             </div>
 
-            {/* Circular representation */}
             <div className="my-5 flex justify-center items-center relative">
               <svg className="w-36 h-36 transform -rotate-90">
                 <circle
@@ -316,7 +275,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               </div>
             </div>
 
-            {/* Verification Warnings */}
             <div className={`p-3.5 rounded-lg border text-xs font-light leading-relaxed ${
               isSafe 
                 ? "bg-emerald-950/10 border-emerald-900/40 text-emerald-300"
@@ -340,7 +298,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           </div>
         </div>
 
-        {/* TIMETABLE & SUBJECT REGISTRY */}
         <div className="xl:col-span-8 flex flex-col gap-6">
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
             <h3 className="text-sm font-semibold text-white font-mono flex items-center justify-between border-b border-neutral-850 pb-3">
@@ -380,7 +337,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         </div>
                       </div>
 
-                      {/* Subject Metrics Display */}
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <span className="text-xs text-neutral-400 font-mono block">Real / Simulated</span>
@@ -392,10 +348,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Progress Bar representation */}
                     <div className="space-y-1.5">
                       <div className="relative w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
-                        {/* Target line indicator at 75% */}
                         <div className="absolute left-[75%] top-0 w-0.5 h-full bg-neutral-700 z-10" />
                         
                         <div 
@@ -413,7 +367,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Simulation Slider inside individual subjects */}
                     <div className="bg-neutral-900/20 px-3 py-2 border border-neutral-850/40 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-1.5 font-mono text-[10px]">
                         <span className="text-neutral-400">Simulate upcoming skips:</span>
@@ -436,7 +389,6 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
         </div>
       </div>
 
-      {/* LEDGER ARCHIVES - Historic logs display table */}
       <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
         <div className="border-b border-neutral-850 pb-3 flex justify-between items-center">
           <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-2">

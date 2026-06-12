@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   LayoutDashboard, 
   Clock, 
@@ -11,15 +11,13 @@ import {
   Crown, 
   User, 
   ChevronRight, 
-  ShieldAlert,
-  Info
+  ShieldAlert
 } from "lucide-react";
 
 import { TabType, ExamTask, UnscheduledTarget, LibraryResource, ChatMessage } from "./types";
-import { DEFAULT_TASKS, DEFAULT_UNSCHEDULED, LIBRARY_RESOURCES } from "./data";
 
-// Import custom views
 import { LoginView } from "./components/LoginView";
+import { RegistrationView } from "./components/RegistrationView";
 import { LandingView } from "./components/LandingView";
 import { DashboardContainer } from "./components/DashboardContainer";
 import { AttendanceView } from "./components/AttendanceView";
@@ -29,206 +27,125 @@ import { QuizView } from "./components/QuizView";
 import { ChatView } from "./components/ChatView";
 import { SmoothCursor } from "./components/SmoothCursor";
 
-// Schema Version constant for safe caching schema migration
-const AEGIS_SCHEMA_VERSION = 2;
+const TOKEN_KEY = "aegis_token";
 
-// Deep recursive validation check comparing cached structures against blueprint templates
-function verifyAndReconcileTypes(cached: any, blueprint: any, contextPath: string = "root"): any {
-  // Defensive check for primitive types or null/undefined blueprints
-  if (blueprint === null || blueprint === undefined) {
-    return cached;
-  }
-  if (cached === null || cached === undefined) {
-    console.info(`[Self-Healing] Restoring defaulted sub-property at "${contextPath}".`);
-    return JSON.parse(JSON.stringify(blueprint));
-  }
-
-  const blueprintType = typeof blueprint;
-  const cachedType = typeof cached;
-
-  // Handle arrays
-  if (Array.isArray(blueprint)) {
-    if (!Array.isArray(cached)) {
-      console.warn(`[Self-Healing] Structural type mismatch at "${contextPath}". Expected Array, received "${cachedType}". Safe fallback deployed.`);
-      return JSON.parse(JSON.stringify(blueprint));
-    }
-    
-    // Arrays elements type evaluation: check items if blueprint contains a template row entry
-    if (blueprint.length > 0) {
-      const templateItem = blueprint[0];
-      return cached.map((element: any, index: number) => 
-        verifyAndReconcileTypes(element, templateItem, `${contextPath}[${index}]`)
-      );
-    }
-    return cached;
-  }
-
-  // Handle objects
-  if (blueprintType === "object") {
-    if (cachedType !== "object" || Array.isArray(cached)) {
-      console.warn(`[Self-Healing] Structural type mismatch at "${contextPath}". Expected Object, received "${cachedType}". Resetting sub-property.`);
-      return JSON.parse(JSON.stringify(blueprint));
-    }
-
-    const reconciled: any = { ...cached };
-    
-    // Check all template fields
-    for (const key of Object.keys(blueprint)) {
-      if (!(key in reconciled)) {
-        console.info(`[Self-Healing] Context expansion: Appending missing key "${key}" under "${contextPath}".`);
-        reconciled[key] = JSON.parse(JSON.stringify(blueprint[key]));
-      } else {
-        // Deep recursive matching for field properties
-        reconciled[key] = verifyAndReconcileTypes(reconciled[key], blueprint[key], `${contextPath}.${key}`);
-      }
-    }
-
-    // Purge outdated properties that are not present in current factory configurations
-    for (const key of Object.keys(reconciled)) {
-      if (!(key in blueprint)) {
-        console.info(`[Self-Healing] Cleared deprecated key "${key}" from storage.`);
-        delete reconciled[key];
-      }
-    }
-
-    return reconciled;
-  }
-
-  // Handle Primitives (number, string, boolean)
-  if (blueprintType !== cachedType) {
-    console.warn(`[Self-Healing] Type mismatch at "${contextPath}". Expected "${blueprintType}", received "${cachedType}". Resetting property value.`);
-    return blueprint;
-  }
-
-  return cached;
+function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-// Helper hook for version-controlled state hydration and structural healing
-function useLocalStorageSecure<T>(key: string, initialValue: T, schemaVersion: number = AEGIS_SCHEMA_VERSION): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) {
-        return initialValue;
-      }
-      
-      const parsedEnvelope = JSON.parse(raw);
-      
-      // Self-Healing Data Recovery Layer Active
-      let unpackedData: any = parsedEnvelope;
-      
-      if (parsedEnvelope && typeof parsedEnvelope === "object" && "version" in parsedEnvelope && "data" in parsedEnvelope) {
-        if (parsedEnvelope.version === schemaVersion) {
-          unpackedData = parsedEnvelope.data;
-        } else {
-          console.warn(`[Secure Hydrator] Schema version mismatch for key "${key}" (Stored: ${parsedEnvelope.version}, Required: ${schemaVersion}). Initiating recursive healing.`);
-          unpackedData = parsedEnvelope.data;
-        }
-      } else {
-        // Handle retro vintage stored structures (upgrade gracefully)
-        console.info(`[Secure Hydrator] Elevating legacy unversioned data for key "${key}" into schema envelopes.`);
-      }
-      
-      // Perform deep-dive type validation check to guarantee runtime type safety and prevent crashes
-      return verifyAndReconcileTypes(unpackedData, initialValue, key) as T;
-    } catch (error) {
-      console.warn(`[Secure Hydrator] Failed reading target key "${key}". Reverting safely to schema fallback:`, error);
-      return initialValue;
-    }
-  });
+function setToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
 
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      const envelope = {
-        version: schemaVersion,
-        data: valueToStore
-      };
-      window.localStorage.setItem(key, JSON.stringify(envelope));
-    } catch (error) {
-      console.warn(`[Secure Hydrator] Failed setting target key "${key}":`, error);
-    }
-  };
+function getAuthHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
-  return [storedValue, setValue];
+interface UserProfile {
+  id: number;
+  email: string;
+  name: string;
+  badge: string;
+  avatarUrl: string;
+  readinessScore: number;
+  attendancePct: number;
 }
 
 export default function App() {
-  // Authentication & Layout Routes
-  const [isLoggedIn, setIsLoggedIn] = useLocalStorageSecure("aegis_is_logged_in", false);
+  const [token, setTokenState] = useState<string | null>(getToken());
+  const [isLoggedIn, setIsLoggedIn] = useState(!!token);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [isViewingPromo, setIsViewingPromo] = useState(false);
-  const [activeTab, setActiveTab] = useLocalStorageSecure<TabType>("aegis_active_tab", "dashboard");
+  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
+  const [isDeepFocus, setIsDeepFocus] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [tasks, setTasks] = useState<ExamTask[]>([]);
+  const [unscheduled, setUnscheduled] = useState<UnscheduledTarget[]>([]);
+  const [libraryResources, setLibraryResources] = useState<LibraryResource[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [attendancePct, setAttendancePct] = useState(0);
+  const [readinessScore, setReadinessScore] = useState(0);
 
-  // Layout Calibration modes
-  const [isDeepFocus, setIsDeepFocus] = useLocalStorageSecure("aegis_deep_focus_mode", false);
-
-  // Global Sync States
-  const [username, setUsername] = useLocalStorageSecure("aegis_username", "Lohith R C");
-  const [userEmail, setUserEmail] = useLocalStorageSecure("aegis_user_email", "lohithraj9095@gmail.com");
-  const [attendancePct, setAttendancePct] = useLocalStorageSecure("aegis_attendance_pct", 84);
-  const [readinessScore, setReadinessScore] = useLocalStorageSecure("aegis_readiness_score", 86);
-
-  // Settings Modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsNameInput, setSettingsNameInput] = useState(username);
-  const [settingsEmailInput, setSettingsEmailInput] = useState(userEmail);
-
-  // Dynamic lists with persistence hydration
-  const [tasks, setTasks] = useLocalStorageSecure<ExamTask[]>("aegis_tasks", DEFAULT_TASKS);
-  const [unscheduled, setUnscheduled] = useLocalStorageSecure<UnscheduledTarget[]>("aegis_unscheduled", DEFAULT_UNSCHEDULED);
-  const [libraryResources, setLibraryResources] = useLocalStorageSecure<LibraryResource[]>("aegis_library_resources", LIBRARY_RESOURCES);
-
-  // Chat memory persistence
-  const [chatMessages, setChatMessages] = useLocalStorageSecure<ChatMessage[]>("aegis_chat_messages", [
-    {
-      id: "greet-1",
-      role: "assistant",
-      content: "Academic coordinate synchronization complete, Scholar. Welcome back to the Aegis Command Center.",
-      timestamp: "09:00 UTC"
-    },
-    {
-      id: "greet-2",
-      role: "assistant",
-      content: "Active placement diagnostic readiness factor is calibrated at 86/100. Let's optimize calculus limit derivations today.",
-      timestamp: "09:01 UTC"
-    }
-  ]);
+  const [settingsNameInput, setSettingsNameInput] = useState("");
+  const [settingsEmailInput, setSettingsEmailInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [modelName, setModelName] = useState<string>("GEMINI_3.5_FLASH");
   const [modelLatency, setModelLatency] = useState<number | null>(35);
   const [responseFidelity, setResponseFidelity] = useState({ level: "High", percentage: 80 });
   const [modelMemoryEnabled, setModelMemoryEnabled] = useState<boolean>(true);
-  const [activeHighlightKeyword, setActiveHighlightKeyword] = useLocalStorageSecure<string | null>("aegis_highlight_keyword", null);
-  
-  // Temporal Decay for Shared AI Context: opacity states and animated countdown loop
+  const [activeHighlightKeyword, setActiveHighlightKeyword] = useState<string | null>(null);
   const [highlightOpacity, setHighlightOpacity] = useState(1);
 
-  React.useEffect(() => {
+  const apiFetch = useCallback(async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+      ...(options.headers as Record<string, string> || {}),
+    };
+    const res = await fetch(endpoint, { ...options, headers });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Request failed" }));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }, []);
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      const profile = await apiFetch("/api/auth/me");
+      setUserProfile(profile.user);
+      setSettingsNameInput(profile.user.name);
+      setSettingsEmailInput(profile.user.email);
+      setAttendancePct(profile.user.attendancePct);
+      setReadinessScore(profile.user.readinessScore);
+
+      const [tasksData, unscheduledData, libraryData, chatData] = await Promise.all([
+        apiFetch("/api/tasks"),
+        apiFetch("/api/unscheduled"),
+        apiFetch("/api/library"),
+        apiFetch("/api/chat/messages"),
+      ]);
+
+      setTasks(tasksData);
+      setUnscheduled(unscheduledData);
+      setLibraryResources(libraryData);
+      setChatMessages(chatData);
+    } catch (err) {
+      console.error("Failed to fetch user data:", err);
+      handleLogout();
+    }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    if (token) {
+      fetchUserData();
+    }
+  }, [token, fetchUserData]);
+
+  useEffect(() => {
     if (!activeHighlightKeyword) {
       setHighlightOpacity(0);
       return;
     }
-
-    // Reset indicator opacity to 100% on active trigger or keyword shift
     setHighlightOpacity(1);
-
     const startTime = Date.now();
-    const duration = 60000; // 60 seconds fading duration window
-
+    const duration = 60000;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const remainingProgress = Math.max(0, 1 - elapsed / duration);
-      
       setHighlightOpacity(remainingProgress);
-
       if (remainingProgress <= 0) {
         clearInterval(interval);
-        // Cleanly restore standard presentation state once fully faded
         setActiveHighlightKeyword(null);
       }
-    }, 200); // 200ms ticks for fluid sub-second visual performance adjustments
-
+    }, 200);
     return () => clearInterval(interval);
   }, [activeHighlightKeyword]);
 
@@ -245,125 +162,95 @@ export default function App() {
     }
   };
 
-  // Sign-in callback
   const handleLoginSuccess = (email: string) => {
-    setUserEmail(email);
-    setSettingsEmailInput(email);
+    setTokenState(getToken());
     setIsLoggedIn(true);
     setIsViewingPromo(false);
     setActiveTab("dashboard");
   };
 
-  // Scheduled planner handlers
-  const handleToggleTask = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const handleRegisterSuccess = (email: string) => {
+    setTokenState(getToken());
+    setIsLoggedIn(true);
+    setIsViewingPromo(false);
+    setActiveTab("dashboard");
   };
 
-  const handleAddTask = (newTask: Omit<ExamTask, "id">) => {
-    const task: ExamTask = {
-      ...newTask,
-      id: `task-${Date.now()}`
-    };
-    setTasks(prev => [...prev, task]);
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore logout errors
+    }
+    setTokenState(null);
+    setToken(null);
+    setUserProfile(null);
+    setTasks([]);
+    setUnscheduled([]);
+    setLibraryResources([]);
+    setChatMessages([]);
+    setAttendancePct(0);
+    setReadinessScore(0);
+    setIsLoggedIn(false);
+    setActiveTab("dashboard");
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleToggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const updated = { ...task, completed: !task.completed };
+    setTasks(prev => prev.map(t => t.id === id ? updated : t));
+    await apiFetch(`/api/tasks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ completed: updated.completed }),
+    });
+  };
+
+  const handleAddTask = async (newTask: Omit<ExamTask, "id">) => {
+    const saved = await apiFetch("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(newTask),
+    });
+    setTasks(prev => [...prev, saved]);
+  };
+
+  const handleDeleteTask = async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
   };
 
-  // Unscheduled goals handlers
-  const handleAddUnscheduled = (newTarget: Omit<UnscheduledTarget, "id">) => {
-    const target: UnscheduledTarget = {
-      ...newTarget,
-      id: `unsched-${Date.now()}`
-    };
-    setUnscheduled(prev => [...prev, target]);
+  const handleAddUnscheduled = async (newTarget: Omit<UnscheduledTarget, "id">) => {
+    const saved = await apiFetch("/api/unscheduled", {
+      method: "POST",
+      body: JSON.stringify(newTarget),
+    });
+    setUnscheduled(prev => [...prev, saved]);
   };
 
-  const handleDeleteUnscheduled = (id: string) => {
+  const handleDeleteUnscheduled = async (id: string) => {
     setUnscheduled(prev => prev.filter(t => t.id !== id));
+    await apiFetch(`/api/unscheduled/${id}`, { method: "DELETE" });
   };
 
-  // Library Sync Toggle handler
-  const handleToggleLibrarySync = (id: string) => {
-    setLibraryResources(prev => prev.map(res => {
-      if (res.id === id) {
-        return { ...res, synced: !res.synced };
-      }
-      return res;
-    }));
+  const handleToggleLibrarySync = async (id: string) => {
+    const resource = libraryResources.find(r => r.id === id);
+    if (!resource) return;
+    const updated = { ...resource, synced: !resource.synced };
+    setLibraryResources(prev => prev.map(r => r.id === id ? updated : r));
+    await apiFetch(`/api/library/${id}/sync`, {
+      method: "PUT",
+      body: JSON.stringify({ synced: updated.synced }),
+    });
   };
 
-  // Specialized rule-matching static processor for bulletproof offline recovery (Upgrade 5)
-  const getLocalFallbackResponse = (userText: string): string => {
-    const query = userText.toLowerCase();
-
-    if (query.includes("calculus") || query.includes("limit") || query.includes("green") || query.includes("fourier") || query.includes("math") || query.includes("integral") || query.includes("coordinate")) {
-      return `[AEGIS OFFLINE CORE :: CALCULUS ADVICE]
-Hello Lohith R C, I have resolved your Calculus coordinates locally. In Calculus MAT-301, the Green's Scalar Theorem converts double-integral coordinate boundary regions into single line integrals:
-
-∮_C (P dx + Q dy) = ∬_D (∂Q/∂x - ∂P/∂y) dA
-
-For fourier series, ensure the boundary intervals satisfy the Dirichlet limits on a standard [0, 2π] coordinate axis.`;
-    }
-
-    if (query.includes("quantum") || query.includes("schrodinger") || query.includes("qubit") || query.includes("circuits") || query.includes("superposition") || query.includes("physics") || query.includes("gate")) {
-      return `[AEGIS OFFLINE CORE :: QUANTUM CIRCUIT EQUATIONS]
-Schrödinger wave mechanics and Bloch Sphere coordinates have been loaded locally:
-
-1. Qubit rotations scale on vector states:
-   |ψ⟩ = cos(θ/2)|0⟩ + e^(iφ)sin(θ/2)|1⟩
-2. Superposition coordinates represent probability amplitudes where |α|^2 + |β|^2 = 1.
-
-I recommend keeping your study practice velocity high on your command dashboard to lock in optimal metrics.`;
-    }
-
-    if (query.includes("np") || query.includes("halt") || query.includes("automata") || query.includes("turing") || query.includes("tape") || query.includes("languages") || query.includes("reduc")) {
-      return `[AEGIS OFFLINE CORE :: COMPUTABILITY LIMITS]
-Under Turing Machine and Formal Language Automata limits:
-- The classic Halting Problem (H_TM) is proven undecidable but Turing-recognizable.
-- Chomsky Hierarchy outlines 4 standard language classes (Regular, Context-Free, Context-Sensitive, Recursively Enumerable).
-- NP-Complete algorithms can be reduced to Boolean SAT via Cook-Levin mapping logic in O(n^k) polynomial duration.`;
-    }
-
-    if (query.includes("attendance") || query.includes("vtu") || query.includes("clearance") || query.includes("scores") || query.includes("skip") || query.includes("lecture") || query.includes("forecaster")) {
-      return `[AEGIS OFFLINE CORE :: VTU REGULATORY SYSTEM]
-VTU Academic Eligibility Regulations mandate:
-- Minimum required attendance thresholds are set strictly at 75%.
-- Pre-emptive alerts and warnings trigger when calculated quotients drop below 80%.
-- Deficit under 75% will detain the academic node and block active exam hall registration.
-
-Interact with your daily class ledger on the Attendance sub-tab to simulate lecture statuses and safeguard qualifications!`;
-    }
-
-    if (query.includes("planner") || query.includes("study") || query.includes("tasks") || query.includes("goals") || query.includes("schedule")) {
-      return `[AEGIS OFFLINE CORE :: STUDY ARCHITECTURE RECOMMENDATION]
-Scholastic planners synced:
-- Schedule a minimum 1.5 Hour practice block for low mastery subjects like Automata (54%).
-- Use checkbox items on the targets ledger to automatically hydrate overall exam readiness.
-- Maintain regular focus durations over the course of the week.`;
-    }
-
-    return `[AEGIS LOCAL SECURE OFFLINE BUFFER]
-Greetings, Scholar. Although the server-side AI connection is currently offline, my localized rule-matching processors are active.
-
-I can guide you on:
-- "VTU Attendance eligibility policies"
-- "Green's Theorem & Calculus integrals"
-- "Schrödinger & Bloch Sphere qubits"
-- "Turing machines & NP-Reductions"
-
-Please input any matching keywords to trigger coordinate analytics advice.`;
-  };
-
-  // Chat message sender integration (real Express API)
   const handleSendMessage = async (text: string) => {
     const startTime = Date.now();
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC";
     const userMsg: ChatMessage = {
       id: `chat-${Date.now()}`,
       role: "user",
       content: text,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
+      timestamp,
     };
 
     observeKeywords(text);
@@ -371,6 +258,12 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
     setIsChatLoading(true);
 
     try {
+      const saved = await apiFetch("/api/chat/messages", {
+        method: "POST",
+        body: JSON.stringify(userMsg),
+      });
+      setChatMessages(prev => [...prev, saved]);
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -379,41 +272,35 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             role: m.role,
             content: m.content
           }))
-        })
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error("Express server-proxy returned non-success code");
-      }
-
+      if (!response.ok) throw new Error("Express server-proxy returned non-success code");
       const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
 
       const assistantMsg: ChatMessage = {
         id: `chat-${Date.now()}-reply`,
         role: "assistant",
         content: data.content || "Communication coordinate error.",
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
+        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC",
       };
 
       observeKeywords(assistantMsg.content);
       setChatMessages(prev => [...prev, assistantMsg]);
+      await apiFetch("/api/chat/messages", {
+        method: "POST",
+        body: JSON.stringify(assistantMsg),
+      });
     } catch (e) {
       console.warn("Server Endpoint offline. Deploying scholarly Offline Fallback Buffer:", e);
-      
-      const fallbackText = getLocalFallbackResponse(text);
-      observeKeywords(fallbackText);
-      
+      const fallbackText = `[AEGIS LOCAL SECURE OFFLINE BUFFER]\nGreetings, Scholar. The AI core is currently offline. Please try again later.`;
       const fallbackMsg: ChatMessage = {
         id: `chat-${Date.now()}-fallback`,
         role: "assistant",
         content: fallbackText,
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC"
+        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) + " UTC",
       };
-      
       setChatMessages(prev => [...prev, fallbackMsg]);
     } finally {
       setModelLatency(Date.now() - startTime);
@@ -421,19 +308,36 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
     }
   };
 
-  // Save Settings panel handler
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (settingsNameInput.trim()) {
-      setUsername(settingsNameInput);
-    }
-    if (settingsEmailInput.trim()) {
-      setUserEmail(settingsEmailInput);
+    if (settingsNameInput.trim() || settingsEmailInput.trim()) {
+      await apiFetch("/api/auth/profile", {
+        method: "PUT",
+        body: JSON.stringify({ name: settingsNameInput, email: settingsEmailInput }),
+      });
+      if (userProfile) {
+        setUserProfile({ ...userProfile, name: settingsNameInput, email: settingsEmailInput });
+      }
     }
     setIsSettingsOpen(false);
   };
 
-  // Public Promotion Landing Bypass router
+  const handleUpdateAttendance = useCallback(async (newPct: number) => {
+    setAttendancePct(newPct);
+    await apiFetch("/api/user/attendance", {
+      method: "PUT",
+      body: JSON.stringify({ percentage: newPct }),
+    });
+  }, [apiFetch]);
+
+  const handleUpdateReadiness = useCallback(async (score: number) => {
+    setReadinessScore(score);
+    await apiFetch("/api/user/readiness", {
+      method: "PUT",
+      body: JSON.stringify({ score }),
+    });
+  }, [apiFetch]);
+
   if (isViewingPromo) {
     return (
       <>
@@ -443,34 +347,37 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
     );
   }
 
-  // Secure Portal Gate
   if (!isLoggedIn) {
     return (
       <>
         <SmoothCursor />
-        <LoginView 
-          onLoginSuccess={handleLoginSuccess} 
-          onNavigateToPromo={() => setIsViewingPromo(true)} 
-        />
+        {authMode === "login" ? (
+          <LoginView 
+            onLoginSuccess={handleLoginSuccess} 
+            onNavigateToPromo={() => setIsViewingPromo(true)}
+            onNavigateToRegister={() => setAuthMode("register")}
+          />
+        ) : (
+          <RegistrationView
+            onRegisterSuccess={handleRegisterSuccess}
+            onNavigateToLogin={() => setAuthMode("login")}
+            onNavigateToPromo={() => setIsViewingPromo(true)}
+          />
+        )}
       </>
     );
   }
 
   const completedTasksCount = tasks.filter(t => t.completed).length;
+  const displayName = userProfile?.name || "Scholar";
+  const displayEmail = userProfile?.email || "";
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex font-sans selection:bg-amber-400 selection:text-neutral-950">
-      
-      {/* Decorative ambient visual background glows - dimmed in deep focus mode */}
       <div className={`absolute top-0 right-1/4 w-96 h-96 bg-[radial-gradient(ellipse_at_top,rgba(180,140,80,0.05)_0%,transparent_70%)] pointer-events-none transition-all duration-1000 ${isDeepFocus ? "opacity-15 blur-lg" : "opacity-100"}`} />
 
-      {/* LEFT SIDEBAR REPLICA (Document 1 layout style) */}
       <aside className="w-64 border-r border-neutral-900 bg-neutral-950 flex flex-col justify-between shrink-0 p-5 relative z-10">
-        
-        {/* Core elements */}
         <div className="space-y-6">
-          
-          {/* Top Logo Badge */}
           <div className="flex items-center gap-3 border-b border-neutral-900 pb-5">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/10">
               <Crown className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
@@ -481,122 +388,52 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             </div>
           </div>
 
-          {/* Profile Card & Gold Badge "Crown Member" (Document 1 detail) */}
           <div className="p-3 bg-neutral-900/40 border border-neutral-850 rounded-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-1">
               <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 bg-neutral-950 rounded-full border border-neutral-800 flex items-center justify-center text-amber-400 font-bold font-mono">
-                {username ? username.charAt(0).toUpperCase() : "S"}
+                {displayName ? displayName.charAt(0).toUpperCase() : "S"}
               </div>
               <div className="leading-tight">
-                <span className="text-xs font-semibold text-white block truncate max-w-[120px]">{username}</span>
+                <span className="text-xs font-semibold text-white block truncate max-w-[120px]">{displayName}</span>
                 <span className="text-[9px] font-mono font-bold text-amber-500 uppercase tracking-widest block">Crown Member</span>
               </div>
             </div>
           </div>
 
-          {/* Side Nav Elements list */}
           <nav className="space-y-1">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "dashboard"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
-              </div>
-              {activeTab === "dashboard" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("attendance")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "attendance"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Clock className="w-4 h-4" />
-                <span>Attendance</span>
-              </div>
-              {activeTab === "attendance" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("planner")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "planner"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Calendar className="w-4 h-4" />
-                <span>Planner</span>
-              </div>
-              {activeTab === "planner" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("resources")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "resources"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-4 h-4" />
-                <span>Resources</span>
-              </div>
-              {activeTab === "resources" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("quiz")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "quiz"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <GraduationCap className="w-4 h-4" />
-                <span>Quiz Suite</span>
-              </div>
-              {activeTab === "quiz" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
-
-            <button
-              onClick={() => setActiveTab("chat")}
-              className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
-                activeTab === "chat"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Bot className="w-4 h-4" />
-                <span>AI Chat</span>
-              </div>
-              {activeTab === "chat" && <ChevronRight className="w-3 h-3 text-amber-500" />}
-            </button>
+            {(["dashboard", "attendance", "planner", "resources", "quiz", "chat"] as TabType[]).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full flex items-center justify-between py-2 px-3 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                  activeTab === tab
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/25 shadow-inner"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/40"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {tab === "dashboard" && <LayoutDashboard className="w-4 h-4" />}
+                  {tab === "attendance" && <Clock className="w-4 h-4" />}
+                  {tab === "planner" && <Calendar className="w-4 h-4" />}
+                  {tab === "resources" && <BookOpen className="w-4 h-4" />}
+                  {tab === "quiz" && <GraduationCap className="w-4 h-4" />}
+                  {tab === "chat" && <Bot className="w-4 h-4" />}
+                  <span>{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                </div>
+                {activeTab === tab && <ChevronRight className="w-3 h-3 text-amber-500" />}
+              </button>
+            ))}
           </nav>
         </div>
 
-        {/* Secondary Navigation elements */}
         <div className="space-y-1.5 border-t border-neutral-900 pt-5">
           <button
             onClick={() => {
-              setSettingsNameInput(username);
-              setSettingsEmailInput(userEmail);
+              setSettingsNameInput(displayName);
+              setSettingsEmailInput(displayEmail);
               setIsSettingsOpen(true);
             }}
             className="w-full flex items-center gap-3 py-2 px-3 text-xs font-medium text-neutral-400 hover:text-white hover:bg-neutral-900/40 rounded-lg cursor-pointer transition-colors"
@@ -604,12 +441,9 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             <Settings className="w-4 h-4" />
             <span>Settings</span>
           </button>
-          
+
           <button
-            onClick={() => {
-              setIsLoggedIn(false);
-              setActiveTab("dashboard");
-            }}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 py-2 px-3 text-xs font-medium text-neutral-400 hover:text-red-400 hover:bg-red-500/5 rounded-lg cursor-pointer transition-colors"
           >
             <LogOut className="w-4 h-4" />
@@ -618,17 +452,14 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
         </div>
       </aside>
 
-      {/* MAIN MAIN VIEW PORT AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#070707] min-h-screen">
-        
-        {/* Top Header Section */}
         <header className="border-b border-neutral-900 bg-neutral-950/40 backdrop-blur-md py-3.5 px-8 flex justify-between items-center z-10 shadow-sm">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] bg-neutral-900 border border-neutral-800 text-neutral-400 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
               {activeTab.toUpperCase()}_STAGE
             </span>
             {activeHighlightKeyword && (
-              <span 
+              <span
                 style={{ opacity: highlightOpacity, transition: "opacity 0.2s ease-out" }}
                 className="animate-pulse flex items-center gap-1.5 font-mono text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full select-none"
               >
@@ -646,7 +477,6 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
             )}
           </div>
 
-          {/* Interactive Layout Mode Switcher */}
           <div className="flex items-center bg-neutral-900/65 border border-neutral-850 rounded-lg p-0.5 font-mono text-[10px] shadow-inner select-none">
             <button
               onClick={() => setIsDeepFocus(false)}
@@ -672,21 +502,20 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono text-neutral-400 font-light">
-            <span className="hidden md:inline select-none">NODE_IDENTITY :: {userEmail}</span>
+            <span className="hidden md:inline select-none">NODE_IDENTITY :: {displayEmail}</span>
             <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-500 ${isDeepFocus ? "bg-indigo-400" : "bg-amber-400"}`} title="Connection state" />
           </div>
         </header>
 
-        {/* Primary View content with scrollable wrapper */}
         <div className="flex-1 p-8 overflow-y-auto">
           {activeTab === "dashboard" && (
-            <DashboardContainer 
+            <DashboardContainer
               onNavigateToTab={setActiveTab}
               attendancePct={attendancePct}
               completedTasksCount={completedTasksCount}
               totalTasksCount={tasks.length}
               readinessScore={readinessScore}
-              username={username}
+              username={displayName}
               isDeepFocus={isDeepFocus}
               activeHighlightKeyword={activeHighlightKeyword}
               highlightOpacity={highlightOpacity}
@@ -695,14 +524,14 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
           )}
 
           {activeTab === "attendance" && (
-            <AttendanceView 
+            <AttendanceView
               currentAttendance={attendancePct}
-              onUpdateAttendance={setAttendancePct}
+              onUpdateAttendance={handleUpdateAttendance}
             />
           )}
 
           {activeTab === "planner" && (
-            <PlannerView 
+            <PlannerView
               tasks={tasks}
               onToggleTask={handleToggleTask}
               onAddTask={handleAddTask}
@@ -714,7 +543,7 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
           )}
 
           {activeTab === "resources" && (
-            <LibraryView 
+            <LibraryView
               resources={libraryResources}
               onToggleSync={handleToggleLibrarySync}
               activeHighlightKeyword={activeHighlightKeyword}
@@ -724,14 +553,14 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
           )}
 
           {activeTab === "quiz" && (
-            <QuizView 
+            <QuizView
               currentReadiness={readinessScore}
-              onUpdateReadiness={setReadinessScore}
+              onUpdateReadiness={handleUpdateReadiness}
             />
           )}
 
           {activeTab === "chat" && (
-            <ChatView 
+            <ChatView
               messages={chatMessages}
               onSendMessage={handleSendMessage}
               isLoading={isChatLoading}
@@ -745,7 +574,6 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
         </div>
       </main>
 
-      {/* CORE MODAL: Settings and configuration panel overlay */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
@@ -763,8 +591,8 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
                   <User className="w-3 h-3 text-neutral-500" />
                   Your Profile Name
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={settingsNameInput}
                   onChange={(e) => setSettingsNameInput(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-sans"
@@ -774,8 +602,8 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
 
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-450">Academic Coordinate Email</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={settingsEmailInput}
                   onChange={(e) => setSettingsEmailInput(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-neutral-400 focus:outline-none focus:border-amber-400 font-mono"
@@ -791,15 +619,15 @@ Please input any matching keywords to trigger coordinate analytics advice.`;
               </div>
 
               <div className="pt-2 flex justify-end gap-3 text-xs">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsSettingsOpen(false)}
                   className="px-4 py-2 bg-neutral-800 text-neutral-300 rounded-lg hover:text-white cursor-pointer"
                 >
                   Close
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold rounded-lg cursor-pointer"
                 >
                   Save Calibrations

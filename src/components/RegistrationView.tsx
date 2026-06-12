@@ -1,17 +1,23 @@
 import React, { useState } from "react";
-import { Shield, Key, Mail, Terminal, Sparkles, BookOpen, User } from "lucide-react";
+import { Shield, Mail, Key, User, Terminal, Sparkles, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { Tilt3D } from "./Tilt3D";
 
-interface LoginViewProps {
-  onLoginSuccess: (email: string) => void;
+interface RegistrationViewProps {
+  onRegisterSuccess: (email: string) => void;
+  onNavigateToLogin: () => void;
   onNavigateToPromo: () => void;
-  onNavigateToRegister: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigateToPromo, onNavigateToRegister }) => {
+export const RegistrationView: React.FC<RegistrationViewProps> = ({
+  onRegisterSuccess,
+  onNavigateToLogin,
+  onNavigateToPromo,
+}) => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [accessKey, setAccessKey] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isHovered, setIsHovered] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,32 +26,40 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
     e.preventDefault();
     setError("");
 
+    if (!name.trim()) {
+      setError("Please provide your full name.");
+      return;
+    }
     if (!email.includes("@")) {
       setError("Please supply a valid academic coordinate (email address).");
       return;
     }
-    if (!accessKey) {
-      setError("Strategic Access Key is required to authorize telemetry.");
+    if (password.length < 6) {
+      setError("Access Key must be at least 6 characters for security protocols.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Access Key confirmation does not match.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: accessKey }),
+        body: JSON.stringify({ email, password, name }),
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+        throw new Error(data.error || "Registration failed");
       }
 
       localStorage.setItem("aegis_token", data.token);
-      onLoginSuccess(email);
+      onRegisterSuccess(email);
     } catch (err: any) {
-      setError(err.message || "Authentication failed. Please try again.");
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,17 +83,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
         </div>
         <div className="flex gap-2">
           <button
-            onClick={onNavigateToRegister}
+            onClick={onNavigateToLogin}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-800 bg-neutral-900/40 text-xs font-mono hover:text-amber-400 hover:border-amber-400/30 transition-all cursor-pointer"
           >
-            <User className="w-3.5 h-3.5" />
-            REGISTER
+            <ArrowLeft className="w-3.5 h-3.5" />
+            BACK
           </button>
           <button
             onClick={onNavigateToPromo}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-800 bg-neutral-900/40 text-xs font-mono hover:text-amber-400 hover:border-amber-400/30 transition-all cursor-pointer"
           >
-            <BookOpen className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5" />
             PUBLIC PROMO
           </button>
         </div>
@@ -98,11 +112,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-neutral-950 text-neutral-400 font-mono text-[10px] uppercase tracking-wider mb-3">
                 <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
-                Academic Command Center v4.01
+                New Scholar Registration
               </div>
-              <h1 className="text-3xl font-sans font-medium tracking-tight text-white">Welcome Back</h1>
+              <h1 className="text-3xl font-sans font-medium tracking-tight text-white">Create Account</h1>
               <p className="text-xs text-neutral-400 mt-2 font-mono">
-                Synchronize your student identity keys below.
+                Initialize your sovereign academic identity.
               </p>
             </div>
 
@@ -113,6 +127,21 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                   {error}
                 </div>
               )}
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-neutral-500" />
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/20 transition-all font-sans"
+                  placeholder="Scholar Full Name"
+                  required
+                />
+              </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 flex items-center gap-1.5">
@@ -136,10 +165,25 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                 </label>
                 <input
                   type="password"
-                  value={accessKey}
-                  onChange={(e) => setAccessKey(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/20 transition-all font-mono"
-                  placeholder="Your private access string"
+                  placeholder="Minimum 6 characters"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 flex items-center gap-1.5">
+                  <Key className="w-3 h-3 text-neutral-500" />
+                  Confirm Access Key
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800/80 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/20 transition-all font-mono"
+                  placeholder="Re-enter access key"
                   required
                 />
               </div>
@@ -155,12 +199,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Authenticating...
+                      Initializing...
                     </>
                   ) : (
                     <>
                       <Terminal className="w-4 h-4 transition-all" />
-                      <span>Enter Command Center</span>
+                      <span>Initialize Command Center</span>
                     </>
                   )}
                 </div>
@@ -172,15 +216,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
               <span className="relative bg-neutral-900/90 text-neutral-500 px-3 text-[10px] font-mono tracking-widest uppercase">federated gate</span>
             </div>
 
-            <div className="text-center text-[10px] font-mono text-neutral-500 space-y-2">
-              <p>Demo credentials: lohith.rc@aegis.edu / student123</p>
-              <button
-                onClick={onNavigateToRegister}
-                className="text-amber-400/70 hover:text-amber-400 transition-colors"
-              >
-                New scholar? Initialize registration protocol
-              </button>
-            </div>
+            <button
+              onClick={onNavigateToLogin}
+              className="w-full py-3 px-4 border border-neutral-800 hover:border-indigo-500/40 hover:bg-indigo-500/5 text-neutral-300 rounded-xl text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              Already have credentials? Sign In
+            </button>
           </motion.div>
         </Tilt3D>
 
