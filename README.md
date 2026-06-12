@@ -82,7 +82,7 @@ aegis-academics/
 **Lohith R C**  
 CSE · Kalpataru Institute of Technology, Tiptur  
 Email: lohithraj9090@gmail.com  
-GitHub: github.com/lohithraj9090
+GitHub: github.com/lohith-raj-90
 
 ---
 
