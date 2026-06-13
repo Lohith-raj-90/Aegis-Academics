@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { seedDatabase } from "./src/server/seed.js";
+import { initializeDatabase } from "./src/server/db.js";
 import { createAuthRouter } from "./src/server/routes.js";
 
 dotenv.config();
@@ -16,7 +17,8 @@ async function startServer() {
 
   app.use(express.json());
 
-  seedDatabase();
+  await initializeDatabase();
+  await seedDatabase();
 
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');

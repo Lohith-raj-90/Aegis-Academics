@@ -4,17 +4,16 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-import { getDb, type Db } from './db.js';
+import { query } from './db.js';
 import { createToken, verifyToken, type SessionUser } from './auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aegis-academics-secret-key-change-in-production';
 
 export interface AuthenticatedRequest extends express.Request {
   user?: SessionUser;
-  db?: Db;
 }
 
-function requireAuth(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
+async function requireAuth(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or invalid authorization token' });
@@ -28,17 +27,19 @@ function requireAuth(req: AuthenticatedRequest, res: express.Response, next: exp
     return;
   }
 
-  const db = getDb();
-  const session = db.prepare('SELECT id, expires_at FROM sessions WHERE id = ?').get(payload.sessionId) as { id: string; expires_at: string } | undefined;
+  const sessionResult = await query('SELECT id, expires_at FROM sessions WHERE id = $1', [payload.sessionId]);
+  const session = sessionResult.rows[0] as { id: string; expires_at: string } | undefined;
   if (!session || new Date(session.expires_at) < new Date()) {
     res.status(401).json({ error: 'Session expired or invalid' });
     return;
   }
 
-  const user = db.prepare(`
-    SELECT id, email, name, badge, avatar_url as avatarUrl, readiness_score as readinessScore, attendance_pct as attendancePct
-    FROM users WHERE id = ?
-  `).get(payload.userId) as SessionUser | undefined;
+  const userResult = await query(
+    `SELECT id, email, name, badge, avatar_url as "avatarUrl", readiness_score as "readinessScore", attendance_pct as "attendancePct"
+     FROM users WHERE id = $1`,
+    [payload.userId]
+  );
+  const user = userResult.rows[0] as SessionUser | undefined;
 
   if (!user) {
     res.status(401).json({ error: 'User not found' });
@@ -47,7 +48,6 @@ function requireAuth(req: AuthenticatedRequest, res: express.Response, next: exp
 
   user.sessionId = payload.sessionId;
   req.user = user;
-  req.db = db;
   next();
 }
 
@@ -67,26 +67,25 @@ export function createAuthRouter() {
         return res.status(400).json({ error: 'Password must be at least 6 characters' });
       }
 
-      const db = getDb();
-      const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: number } | undefined;
-      if (existing) {
+      const existingResult = await query('SELECT id FROM users WHERE email = $1', [email]);
+      if (existingResult.rows.length > 0) {
         return res.status(409).json({ error: 'Email already registered' });
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
-      const result = db.prepare(`
-        INSERT INTO users (email, password_hash, name)
-        VALUES (?, ?, ?)
-      `).run(email, passwordHash, name);
+      const result = await query(
+        'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id',
+        [email, passwordHash, name]
+      );
 
-      const userId = result.lastInsertRowid as number;
+      const userId = result.rows[0].id;
       const sessionId = uuidv4();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      db.prepare(`
-        INSERT INTO sessions (id, user_id, expires_at)
-        VALUES (?, ?, ?)
-      `).run(sessionId, userId, expiresAt);
+      await query(
+        'INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)',
+        [sessionId, userId, expiresAt]
+      );
 
       const token = createToken({ userId, email, sessionId });
 
@@ -115,8 +114,8 @@ export function createAuthRouter() {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      const db = getDb();
-      const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+      const userResult = await query('SELECT * FROM users WHERE email = $1', [email]);
+      const user = userResult.rows[0] as any;
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
@@ -129,10 +128,10 @@ export function createAuthRouter() {
       const sessionId = uuidv4();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      db.prepare(`
-        INSERT INTO sessions (id, user_id, expires_at)
-        VALUES (?, ?, ?)
-      `).run(sessionId, user.id, expiresAt);
+      await query(
+        'INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)',
+        [sessionId, user.id, expiresAt]
+      );
 
       const token = createToken({ userId: user.id, email: user.email, sessionId });
 
@@ -154,11 +153,10 @@ export function createAuthRouter() {
     }
   });
 
-  router.post('/api/auth/logout', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.post('/api/auth/logout', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       if (req.user && req.user.sessionId) {
-        const db = getDb();
-        db.prepare('DELETE FROM sessions WHERE id = ?').run(req.user.sessionId);
+        await query('DELETE FROM sessions WHERE id = $1', [req.user.sessionId]);
       }
       res.json({ success: true });
     } catch (err) {
@@ -184,208 +182,194 @@ export function createAuthRouter() {
     });
   });
 
-  router.put('/api/auth/profile', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.put('/api/auth/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { name, email } = req.body;
-    const db = getDb();
-    db.prepare(`
-      UPDATE users SET name = ?, email = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(name || req.user.name, email || req.user.email, req.user.id);
+    await query(
+      'UPDATE users SET name = $1, email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+      [name || req.user.name, email || req.user.email, req.user.id]
+    );
     res.json({ success: true });
   });
 
-  router.get('/api/tasks', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/tasks', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    const tasks = db.prepare(`
-      SELECT id, subject, topic, day, duration, priority, completed
-      FROM tasks WHERE user_id = ? ORDER BY created_at DESC
-    `).all(req.user.id);
-    res.json(tasks);
+    const result = await query(
+      'SELECT id, subject, topic, day, duration, priority, completed FROM tasks WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(result.rows);
   });
 
-  router.post('/api/tasks', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.post('/api/tasks', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { subject, topic, day, duration, priority, completed } = req.body;
-    const db = getDb();
     const id = uuidv4();
-    db.prepare(`
-      INSERT INTO tasks (id, user_id, subject, topic, day, duration, priority, completed)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, req.user.id, subject, topic, day, duration, priority, completed ? 1 : 0);
+    await query(
+      'INSERT INTO tasks (id, user_id, subject, topic, day, duration, priority, completed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+      [id, req.user.id, subject, topic, day, duration, priority, completed ? 1 : 0]
+    );
     res.status(201).json({ id, subject, topic, day, duration, priority, completed: !!completed });
   });
 
-  router.put('/api/tasks/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.put('/api/tasks/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { completed } = req.body;
-    const db = getDb();
-    db.prepare(`
-      UPDATE tasks SET completed = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND user_id = ?
-    `).run(completed ? 1 : 0, req.params.id, req.user.id);
+    await query(
+      'UPDATE tasks SET completed = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3',
+      [completed ? 1 : 0, req.params.id, req.user.id]
+    );
     res.json({ success: true });
   });
 
-  router.delete('/api/tasks/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.delete('/api/tasks/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    await query('DELETE FROM tasks WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     res.json({ success: true });
   });
 
-  router.get('/api/unscheduled', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/unscheduled', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    const targets = db.prepare(`
-      SELECT id, subject, topic, estimated_hours as estimatedHours
-      FROM unscheduled_targets WHERE user_id = ?
-    `).all(req.user.id);
-    res.json(targets);
+    const result = await query(
+      'SELECT id, subject, topic, estimated_hours as "estimatedHours" FROM unscheduled_targets WHERE user_id = $1',
+      [req.user.id]
+    );
+    res.json(result.rows);
   });
 
-  router.post('/api/unscheduled', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.post('/api/unscheduled', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { subject, topic, estimatedHours } = req.body;
-    const db = getDb();
     const id = uuidv4();
-    db.prepare(`
-      INSERT INTO unscheduled_targets (id, user_id, subject, topic, estimated_hours)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, req.user.id, subject, topic, estimatedHours);
+    await query(
+      'INSERT INTO unscheduled_targets (id, user_id, subject, topic, estimated_hours) VALUES ($1, $2, $3, $4, $5)',
+      [id, req.user.id, subject, topic, estimatedHours]
+    );
     res.status(201).json({ id, subject, topic, estimatedHours });
   });
 
-  router.delete('/api/unscheduled/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.delete('/api/unscheduled/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    db.prepare('DELETE FROM unscheduled_targets WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    await query('DELETE FROM unscheduled_targets WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     res.json({ success: true });
   });
 
-  router.get('/api/library', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/library', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    const resources = db.prepare(`
-      SELECT id, title, category, file_size as fileSize, synced, abstract
-      FROM library_resources WHERE user_id = ?
-    `).all(req.user.id);
-    res.json(resources);
+    const result = await query(
+      'SELECT id, title, category, file_size as "fileSize", synced, abstract FROM library_resources WHERE user_id = $1',
+      [req.user.id]
+    );
+    res.json(result.rows);
   });
 
-  router.put('/api/library/:id/sync', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.put('/api/library/:id/sync', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { synced } = req.body;
-    const db = getDb();
-    db.prepare(`
-      UPDATE library_resources SET synced = ? WHERE id = ? AND user_id = ?
-    `).run(synced ? 1 : 0, req.params.id, req.user.id);
+    await query(
+      'UPDATE library_resources SET synced = $1 WHERE id = $2 AND user_id = $3',
+      [synced ? 1 : 0, req.params.id, req.user.id]
+    );
     res.json({ success: true });
   });
 
-  router.get('/api/chat/messages', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/chat/messages', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    const messages = db.prepare(`
-      SELECT id, role, content, timestamp
-      FROM chat_messages WHERE user_id = ? ORDER BY created_at ASC
-    `).all(req.user.id);
-    res.json(messages);
+    const result = await query(
+      'SELECT id, role, content, timestamp FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC',
+      [req.user.id]
+    );
+    res.json(result.rows);
   });
 
-  router.post('/api/chat/messages', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.post('/api/chat/messages', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { role, content, timestamp } = req.body;
-    const db = getDb();
     const id = uuidv4();
-    db.prepare(`
-      INSERT INTO chat_messages (id, user_id, role, content, timestamp)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, req.user.id, role, content, timestamp);
+    await query(
+      'INSERT INTO chat_messages (id, user_id, role, content, timestamp) VALUES ($1, $2, $3, $4, $5)',
+      [id, req.user.id, role, content, timestamp]
+    );
     res.status(201).json({ id, role, content, timestamp });
   });
 
-  router.get('/api/attendance', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    const ledger = db.prepare(`
-      SELECT id, subject, date, status
-      FROM attendance_ledger WHERE user_id = ? ORDER BY date DESC
-    `).all(req.user.id);
-    res.json(ledger);
+    const result = await query(
+      'SELECT id, subject, date, status FROM attendance_ledger WHERE user_id = $1 ORDER BY date DESC',
+      [req.user.id]
+    );
+    res.json(result.rows);
   });
 
-  router.post('/api/attendance', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.post('/api/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { subject, date, status } = req.body;
-    const db = getDb();
     const id = uuidv4();
-    db.prepare(`
-      INSERT INTO attendance_ledger (id, user_id, subject, date, status)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, req.user.id, subject, date, status);
+    await query(
+      'INSERT INTO attendance_ledger (id, user_id, subject, date, status) VALUES ($1, $2, $3, $4, $5)',
+      [id, req.user.id, subject, date, status]
+    );
     res.status(201).json({ id, subject, date, status });
   });
 
-  router.delete('/api/attendance/:id', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.delete('/api/attendance/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
-    const db = getDb();
-    db.prepare('DELETE FROM attendance_ledger WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    await query('DELETE FROM attendance_ledger WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
     res.json({ success: true });
   });
 
-  router.put('/api/user/readiness', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.put('/api/user/readiness', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { score } = req.body;
-    const db = getDb();
-    db.prepare(`
-      UPDATE users SET readiness_score = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-    `).run(score, req.user.id);
+    await query(
+      'UPDATE users SET readiness_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [score, req.user.id]
+    );
     res.json({ success: true, score });
   });
 
-  router.put('/api/user/attendance', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.put('/api/user/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     const { percentage } = req.body;
-    const db = getDb();
-    db.prepare(`
-      UPDATE users SET attendance_pct = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-    `).run(percentage, req.user.id);
+    await query(
+      'UPDATE users SET attendance_pct = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [percentage, req.user.id]
+    );
     res.json({ success: true, percentage });
   });
 

@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { getDb, type Db } from './db.js';
+import { query } from './db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aegis-academics-secret-key-change-in-production';
 const JWT_EXPIRY = '7d';
@@ -47,14 +47,18 @@ export async function authenticateRequest(req: any, res: any, next: any): Promis
     return;
   }
 
-  const db = getDb();
-  const session = db.prepare('SELECT id, expires_at FROM sessions WHERE id = ?').get(payload.sessionId) as { id: string; expires_at: string } | undefined;
+  const sessionResult = await query('SELECT id, expires_at FROM sessions WHERE id = $1', [payload.sessionId]);
+  const session = sessionResult.rows[0] as { id: string; expires_at: string } | undefined;
   if (!session || new Date(session.expires_at) < new Date()) {
     res.status(401).json({ error: 'Session expired or invalid' });
     return;
   }
 
-  const user = db.prepare('SELECT id, email, name, badge, avatar_url as avatarUrl, readiness_score as readinessScore, attendance_pct as attendancePct FROM users WHERE id = ?').get(payload.userId) as SessionUser | undefined;
+  const userResult = await query(
+    'SELECT id, email, name, badge, avatar_url as "avatarUrl", readiness_score as "readinessScore", attendance_pct as "attendancePct" FROM users WHERE id = $1',
+    [payload.userId]
+  );
+  const user = userResult.rows[0] as SessionUser | undefined;
   if (!user) {
     res.status(401).json({ error: 'User not found' });
     return;
@@ -62,24 +66,26 @@ export async function authenticateRequest(req: any, res: any, next: any): Promis
 
   user.sessionId = payload.sessionId;
   req.user = user;
-  req.db = db;
   next();
 }
 
-export function optionalAuth(req: any, res: any, next: any): void {
+export async function optionalAuth(req: any, res: any, next: any): Promise<void> {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     const payload = verifyToken(token);
     if (payload && payload.sessionId) {
-      const db = getDb();
-      const session = db.prepare('SELECT id, expires_at FROM sessions WHERE id = ?').get(payload.sessionId) as { id: string; expires_at: string } | undefined;
+      const sessionResult = await query('SELECT id, expires_at FROM sessions WHERE id = $1', [payload.sessionId]);
+      const session = sessionResult.rows[0] as { id: string; expires_at: string } | undefined;
       if (session && new Date(session.expires_at) >= new Date()) {
-        const user = db.prepare('SELECT id, email, name, badge, avatar_url as avatarUrl, readiness_score as readinessScore, attendance_pct as attendancePct FROM users WHERE id = ?').get(payload.userId) as SessionUser | undefined;
+        const userResult = await query(
+          'SELECT id, email, name, badge, avatar_url as "avatarUrl", readiness_score as "readinessScore", attendance_pct as "attendancePct" FROM users WHERE id = $1',
+          [payload.userId]
+        );
+        const user = userResult.rows[0] as SessionUser | undefined;
         if (user) {
           user.sessionId = payload.sessionId;
           req.user = user;
-          req.db = db;
         }
       }
     }
