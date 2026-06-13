@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { QuantumCore3D } from "./QuantumCore3D";
 import { Tilt3D } from "./Tilt3D";
+import { ScrollReveal, ParallaxSection, TextReveal } from "./ScrollReveal";
 
 interface LandingViewProps {
   onBackToLogin: () => void;
@@ -212,13 +213,11 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
               VTU-Optimized Student Platform
             </motion.div>
 
-            <motion.h1 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-6xl font-extralight tracking-tight text-white leading-[1.1]">
-              The Command Center for <br className="hidden sm:inline" />
-              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-indigo-400">
-                Academic Excellence
-              </span>
-            </motion.h1>
+            <TextReveal
+              text="The Command Center for Academic Excellence"
+              as="h1"
+              className="text-4xl sm:text-5xl md:text-6xl font-extralight tracking-tight text-white leading-[1.1]"
+            />
 
             <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               className="text-zinc-400 text-base md:text-lg font-light leading-relaxed max-w-2xl">
@@ -278,32 +277,34 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
 
       <section id="features" className="border-t border-zinc-900/60 bg-zinc-900/10 py-24 px-6 relative z-10 scroll-mt-6">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mx-auto text-center space-y-3 mb-16">
-            <span className="font-mono text-amber-400 uppercase tracking-[0.25em] text-xs font-bold block">// FEATURES</span>
-            <h2 className="text-3xl md:text-4xl font-light tracking-tight text-white leading-tight">
-              Everything You Need to <span className="text-amber-400 font-semibold">Ace Your Semester</span>
-            </h2>
-            <div className="w-12 h-1 bg-gradient-to-r from-amber-500 to-indigo-600 mx-auto rounded-full mt-2" />
-          </div>
+          <ScrollReveal direction="up">
+            <div className="max-w-3xl mx-auto text-center space-y-3 mb-16">
+              <span className="font-mono text-amber-400 uppercase tracking-[0.25em] text-xs font-bold block">// FEATURES</span>
+              <h2 className="text-3xl md:text-4xl font-light tracking-tight text-white leading-tight">
+                Everything You Need to <span className="text-amber-400 font-semibold">Ace Your Semester</span>
+              </h2>
+              <div className="w-12 h-1 bg-gradient-to-r from-amber-500 to-indigo-600 mx-auto rounded-full mt-2" />
+            </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {FEATURES.map((feature, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="bg-zinc-950/60 border border-zinc-900 hover:border-amber-400/25 p-6 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:shadow-lg hover:shadow-amber-500/5">
-                <div className="space-y-4">
-                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${feature.iconClass}`}>
-                    <feature.icon className="w-5 h-5 stroke-[2]" />
+              <ScrollReveal key={i} direction="up" delay={i * 0.1}>
+                <div className="bg-zinc-950/60 border border-zinc-900 hover:border-amber-400/25 p-6 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:shadow-lg hover:shadow-amber-500/5 h-full">
+                  <div className="space-y-4">
+                    <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${feature.iconClass}`}>
+                      <feature.icon className="w-5 h-5 stroke-[2]" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-base font-medium text-white group-hover:text-amber-400 transition-colors">{feature.title}</h3>
+                      <p className="text-zinc-400 text-xs leading-relaxed font-light">{feature.description}</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-base font-medium text-white group-hover:text-amber-400 transition-colors">{feature.title}</h3>
-                    <p className="text-zinc-400 text-xs leading-relaxed font-light">{feature.description}</p>
+                  <div className="pt-4 mt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500">
+                    {feature.stat}
                   </div>
                 </div>
-                <div className="pt-4 mt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500">
-                  {feature.stat}
-                </div>
-              </motion.div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -311,26 +312,28 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
 
       <section className="py-24 px-6 max-w-7xl mx-auto relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="font-mono text-purple-400 uppercase tracking-[0.25em] text-xs font-bold block">// WHY_AEGIS</span>
-            <h2 className="text-3xl md:text-4xl font-extralight tracking-tight text-white leading-tight">
-              Why students <span className="text-amber-400 font-semibold">love this platform</span>
-            </h2>
-            <div className="w-16 h-1 bg-purple-500 rounded-full" />
-            <p className="text-zinc-400 leading-relaxed font-light text-sm">
-              Education shouldn't live on disjointed notebooks. Aegis Academics bridges tracking, forecasting, and learning into a fluid experience.
-            </p>
-            <div className="flex p-1 bg-zinc-900/60 border border-zinc-800 rounded-xl max-w-xs text-xs font-mono">
-              <button onClick={() => setActiveAnalysisTab("problems")}
-                className={`flex-1 py-2 px-3 rounded-lg cursor-pointer transition-all ${activeAnalysisTab === "problems" ? "bg-zinc-800 text-white font-semibold" : "text-zinc-400 hover:text-white"}`}>
-                Before Aegis
-              </button>
-              <button onClick={() => setActiveAnalysisTab("solution")}
-                className={`flex-1 py-2 px-3 rounded-lg cursor-pointer transition-all ${activeAnalysisTab === "solution" ? "bg-amber-400 text-neutral-900 font-semibold" : "text-zinc-400 hover:text-white"}`}>
-                With Aegis
-              </button>
+          <ScrollReveal direction="left" rotateY={5}>
+            <div className="space-y-6">
+              <span className="font-mono text-purple-400 uppercase tracking-[0.25em] text-xs font-bold block">// WHY_AEGIS</span>
+              <h2 className="text-3xl md:text-4xl font-extralight tracking-tight text-white leading-tight">
+                Why students <span className="text-amber-400 font-semibold">love this platform</span>
+              </h2>
+              <div className="w-16 h-1 bg-purple-500 rounded-full" />
+              <p className="text-zinc-400 leading-relaxed font-light text-sm">
+                Education shouldn't live on disjointed notebooks. Aegis Academics bridges tracking, forecasting, and learning into a fluid experience.
+              </p>
+              <div className="flex p-1 bg-zinc-900/60 border border-zinc-800 rounded-xl max-w-xs text-xs font-mono">
+                <button onClick={() => setActiveAnalysisTab("problems")}
+                  className={`flex-1 py-2 px-3 rounded-lg cursor-pointer transition-all ${activeAnalysisTab === "problems" ? "bg-zinc-800 text-white font-semibold" : "text-zinc-400 hover:text-white"}`}>
+                  Before Aegis
+                </button>
+                <button onClick={() => setActiveAnalysisTab("solution")}
+                  className={`flex-1 py-2 px-3 rounded-lg cursor-pointer transition-all ${activeAnalysisTab === "solution" ? "bg-amber-400 text-neutral-900 font-semibold" : "text-zinc-400 hover:text-white"}`}>
+                  With Aegis
+                </button>
+              </div>
             </div>
-          </div>
+          </ScrollReveal>
 
           <div className="relative">
             <AnimatePresence mode="wait">
@@ -477,16 +480,19 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
 
       <section id="developer" className="border-t border-zinc-900/60 bg-zinc-900/10 py-24 px-6 relative z-10 scroll-mt-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center space-y-3 mb-16">
-            <span className="font-mono text-amber-400 uppercase tracking-[0.25em] text-xs font-bold block">// DEVELOPER</span>
-            <h2 className="text-3xl md:text-4xl font-light text-white tracking-tight leading-tight">
-              Built by <span className="text-amber-400 font-semibold">Lohith R C</span>
-            </h2>
-            <div className="w-12 h-1 bg-gradient-to-r from-amber-500 to-indigo-600 mx-auto rounded-full mt-2" />
-          </div>
+          <ScrollReveal direction="up">
+            <div className="text-center space-y-3 mb-16">
+              <span className="font-mono text-amber-400 uppercase tracking-[0.25em] text-xs font-bold block">// DEVELOPER</span>
+              <h2 className="text-3xl md:text-4xl font-light text-white tracking-tight leading-tight">
+                Built by <span className="text-amber-400 font-semibold">Lohith R C</span>
+              </h2>
+              <div className="w-12 h-1 bg-gradient-to-r from-amber-500 to-indigo-600 mx-auto rounded-full mt-2" />
+            </div>
+          </ScrollReveal>
 
-          <div className="max-w-4xl mx-auto">
-            <Tilt3D maxTilt={4} scale={1.012}>
+          <ScrollReveal direction="up" rotateX={3} scale={0.98}>
+            <div className="max-w-4xl mx-auto">
+              <Tilt3D maxTilt={4} scale={1.012}>
               <div className="bg-zinc-950 border border-zinc-900 hover:border-amber-400/15 p-8 md:p-12 rounded-3xl relative overflow-hidden flex flex-col lg:flex-row gap-10 items-center transition-all duration-300">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.05)_0%,transparent_70%)] pointer-events-none" />
                 <div className="relative group shrink-0">
@@ -524,6 +530,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
               </div>
             </Tilt3D>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -623,18 +630,26 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
         </div>
       </section>
 
-      <section className="bg-gradient-to-b from-transparent to-neutral-950 py-24 border-t border-zinc-900 text-center space-y-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.015)_0%,transparent_70%)] pointer-events-none" />
-        <h2 className="text-3xl sm:text-4xl font-extralight tracking-tight text-white">Ready to Transform Your Studies?</h2>
-        <p className="text-zinc-400 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
-          Join hundreds of students using Aegis Academics to track attendance, prepare for exams, and ace their semesters.
-        </p>
-        <button onClick={onBackToLogin}
-          className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-900 hover:scale-[1.015] active:scale-[0.99] transition-all duration-300 rounded-xl font-bold text-sm inline-flex items-center gap-2 cursor-pointer shadow-lg shadow-amber-500/5">
-          Get Started Free
-          <ArrowRight className="w-4 h-4 text-neutral-900" />
-        </button>
-      </section>
+      <ParallaxSection speed={0.3}>
+        <section className="bg-gradient-to-b from-transparent to-neutral-950 py-24 border-t border-zinc-900 text-center space-y-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.015)_0%,transparent_70%)] pointer-events-none" />
+          <ScrollReveal direction="up">
+            <h2 className="text-3xl sm:text-4xl font-extralight tracking-tight text-white">Ready to Transform Your Studies?</h2>
+          </ScrollReveal>
+          <ScrollReveal direction="up" delay={0.1}>
+            <p className="text-zinc-400 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+              Join hundreds of students using Aegis Academics to track attendance, prepare for exams, and ace their semesters.
+            </p>
+          </ScrollReveal>
+          <ScrollReveal direction="up" delay={0.2}>
+            <button onClick={onBackToLogin}
+              className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-900 hover:scale-[1.015] active:scale-[0.99] transition-all duration-300 rounded-xl font-bold text-sm inline-flex items-center gap-2 cursor-pointer shadow-lg shadow-amber-500/5">
+              Get Started Free
+              <ArrowRight className="w-4 h-4 text-neutral-900" />
+            </button>
+          </ScrollReveal>
+        </section>
+      </ParallaxSection>
 
       <footer className="border-t border-zinc-900/60 py-12 text-center text-[11px] text-zinc-500 font-mono relative z-10 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-6 space-y-2">

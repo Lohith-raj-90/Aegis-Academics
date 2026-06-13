@@ -28,9 +28,27 @@ import { ChatView } from "./components/ChatView";
 import { SmoothCursor } from "./components/SmoothCursor";
 
 const TOKEN_KEY = "aegis_token";
+const USER_CACHE_KEY = "aegis_user_cache";
 
 function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+function getCachedUser(): UserProfile | null {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedUser(user: UserProfile | null): void {
+  if (user) {
+    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(USER_CACHE_KEY);
+  }
 }
 
 function setToken(token: string | null): void {
@@ -72,6 +90,7 @@ export default function App() {
   chatMessagesRef.current = chatMessages;
   const [attendancePct, setAttendancePct] = useState(0);
   const [readinessScore, setReadinessScore] = useState(0);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsNameInput, setSettingsNameInput] = useState("");
@@ -99,10 +118,31 @@ export default function App() {
     return res.json();
   }, []);
 
-  const fetchUserData = useCallback(async () => {
+  const handleLogout = useCallback(async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // ignore logout errors
+    }
+    setTokenState(null);
+    setToken(null);
+    setUserProfile(null);
+    setCachedUser(null);
+    setTasks([]);
+    setUnscheduled([]);
+    setLibraryResources([]);
+    setChatMessages([]);
+    setAttendancePct(0);
+    setReadinessScore(0);
+    setIsLoggedIn(false);
+    setActiveTab("dashboard");
+  }, [apiFetch]);
+
+  const fetchUserData = useCallback(async (retryCount = 0) => {
     try {
       const profile = await apiFetch("/api/auth/me");
       setUserProfile(profile.user);
+      setCachedUser(profile.user);
       setSettingsNameInput(profile.user.name);
       setSettingsEmailInput(profile.user.email);
       setAttendancePct(profile.user.attendancePct);
@@ -123,13 +163,29 @@ export default function App() {
       console.error("Failed to fetch user data:", err);
       if (err.message?.includes("401") || err.message?.includes("Unauthorized") || err.message?.includes("expired")) {
         handleLogout();
+      } else if (retryCount < 3) {
+        await new Promise(r => setTimeout(r, 2000 * (retryCount + 1)));
+        return fetchUserData(retryCount + 1);
+      } else {
+        const cached = getCachedUser();
+        if (cached) {
+          setUserProfile(cached);
+          setSettingsNameInput(cached.name);
+          setSettingsEmailInput(cached.email);
+          setAttendancePct(cached.attendancePct);
+          setReadinessScore(cached.readinessScore);
+        }
       }
+    } finally {
+      setIsAuthLoading(false);
     }
-  }, [apiFetch]);
+  }, [apiFetch, handleLogout]);
 
   useEffect(() => {
     if (token) {
       fetchUserData();
+    } else {
+      setIsAuthLoading(false);
     }
   }, [token, fetchUserData]);
 
@@ -177,25 +233,6 @@ export default function App() {
     setTokenState(getToken());
     setIsLoggedIn(true);
     setIsViewingPromo(false);
-    setActiveTab("dashboard");
-  };
-
-  const handleLogout = async () => {
-    try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // ignore logout errors
-    }
-    setTokenState(null);
-    setToken(null);
-    setUserProfile(null);
-    setTasks([]);
-    setUnscheduled([]);
-    setLibraryResources([]);
-    setChatMessages([]);
-    setAttendancePct(0);
-    setReadinessScore(0);
-    setIsLoggedIn(false);
     setActiveTab("dashboard");
   };
 
