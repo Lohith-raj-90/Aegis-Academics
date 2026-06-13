@@ -236,11 +236,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="relative overflow-hidden rounded-2xl border border-zinc-900 bg-gradient-to-br from-zinc-950 via-zinc-900/60 to-zinc-950 p-8 shadow-2xl h-full flex flex-col justify-between">
               
               {/* Radial decor gradient */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-radial-gradient(circle_at_top_right,rgba(245,158,11,0.04)_0%,transparent_70%) pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-80 h-80 bg-radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.03)_0%,transparent_70%) pointer-events-none" />
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.04)_0%,transparent_70%)] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-[radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.03)_0%,transparent_70%)] pointer-events-none" />
 
               <div className="space-y-4 max-w-xl relative z-10">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-zinc-850 bg-zinc-900/80 text-zinc-400 font-mono text-[9px] uppercase tracking-wider">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-zinc-800 bg-zinc-900/80 text-zinc-400 font-mono text-[9px] uppercase tracking-wider">
                   SYSTEM ENGINE VIEWPORT
                 </div>
                 <h2 className="text-2xl md:text-3xl font-extralight text-white leading-tight">
@@ -252,15 +252,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 
                 {/* Active Dynamic Micro-Counter */}
                 <div className="grid grid-cols-3 gap-4 pt-2 max-w-sm">
-                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-xs">
+                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-sm">
                     <span className="text-[9px] font-mono text-zinc-500 uppercase block">Ready Level</span>
                     <span className="text-base font-bold text-white font-mono">{initialReadiness}%</span>
                   </div>
-                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-xs">
+                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-sm">
                     <span className="text-[9px] font-mono text-zinc-500 uppercase block">Active Subjects</span>
                     <span className="text-base font-bold text-indigo-400 font-mono">4 Modules</span>
                   </div>
-                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-xs">
+                  <div className="border border-zinc-900 bg-zinc-950/45 p-2 px-3 rounded-lg text-center backdrop-blur-sm">
                     <span className="text-[9px] font-mono text-zinc-500 uppercase block">Tasks Remain</span>
                     <span className="text-base font-bold text-amber-400 font-mono">
                       {totalTasksCount - completedTasksCount}
@@ -280,7 +280,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
                 <button
                   onClick={() => onNavigateToTab("planner")}
-                  className="px-5 py-2.5 border border-zinc-850 hover:border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:text-white text-xs font-semibold rounded-lg transition-all cursor-pointer shadow-inner"
+                  className="px-5 py-2.5 border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:text-white text-xs font-semibold rounded-lg transition-all cursor-pointer shadow-inner"
                 >
                   Formulate Study Architecture
                 </button>
@@ -361,7 +361,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   max="12"
                   value={sessionLecturesSkipped}
                   onChange={(e) => setSessionLecturesSkipped(Number(e.target.value))}
-                  className="w-full accent-amber-450 bg-zinc-900 rounded-lg cursor-pointer h-1.5"
+                  className="w-full accent-amber-400 bg-zinc-900 rounded-lg cursor-pointer h-1.5"
                 />
               </div>
 
@@ -387,7 +387,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         ✓ EXAM ELIGIBLE
                       </span>
                     ) : simulatedAttendancePct >= 75 ? (
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-amber-450 bg-amber-400/5 px-2.5 py-0.5 rounded border border-amber-400/15">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold text-amber-400 bg-amber-400/5 px-2.5 py-0.5 rounded border border-amber-400/15">
                         ⚠ WARNING DEFICIT
                       </span>
                     ) : (
@@ -418,7 +418,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <Cpu className="w-4 h-4 text-amber-500" />
                 <h3 className="text-base font-semibold text-white">Aegis Neural Advisor</h3>
               </div>
-              <span className="text-[10px] font-mono text-amber-450 flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-amber-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 REAL-TIME INSIGHT
               </span>
@@ -426,7 +426,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* Dynamic Insight Banner space */}
             <div className="bg-zinc-900/20 border border-zinc-900 rounded-xl p-4.5 relative overflow-hidden flex-1 flex flex-col justify-center min-h-[110px]">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/2 bg-radial-gradient pointer-events-none" />
+              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-400/5 bg-[radial-gradient(circle,rgba(245,158,11,0.05)_0%,transparent_70%)] pointer-events-none" />
               
               <AnimatePresence mode="wait">
                 <motion.div
@@ -687,7 +687,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   
                   {/* Floating badge details */}
-                  <div className="absolute bottom-full mb-2 bg-neutral-950 border border-zinc-880 text-[9px] font-mono text-amber-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none text-center z-20 shadow-xl whitespace-nowrap">
+                  <div className="absolute bottom-full mb-2 bg-neutral-950 border border-zinc-700 text-[9px] font-mono text-amber-300 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none text-center z-20 shadow-xl whitespace-nowrap">
                     {val.label}<br />
                     <span className="text-white font-bold">{val.hours} Hours Focused</span>
                   </div>
@@ -695,10 +695,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {/* Single column bar container */}
                   <div className="w-full bg-zinc-900/35 group-hover:bg-zinc-900/60 rounded-t h-full flex items-end relative overflow-hidden">
                     <div 
-                      className={`w-full rounded-t transition-all duration-305 ${
+                      className={`w-full rounded-t transition-all duration-300 ${
                         isSelected 
                           ? "bg-gradient-to-t from-indigo-600 via-amber-400 to-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.4)]" 
-                          : "bg-gradient-to-t from-zinc-800 to-amber-550/85 group-hover:from-zinc-700 group-hover:to-amber-400"
+                          : "bg-gradient-to-t from-zinc-800 to-amber-500/85 group-hover:from-zinc-700 group-hover:to-amber-400"
                       }`}
                       style={{ height: `${heightPct}%` }}
                     />
@@ -748,7 +748,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span className="text-xs font-semibold text-white group-hover:text-indigo-400 transition-colors block">Quantum Circuit Equations</span>
                     <span className="text-[9px] text-zinc-500 font-mono">Bloch sphere & superposition gates</span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-400/5 text-indigo-400 border border-indigo-455/20 font-bold">Dec 15</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-400/5 text-indigo-400 border border-indigo-400/20 font-bold">Dec 15</span>
                 </div>
 
                 <div 

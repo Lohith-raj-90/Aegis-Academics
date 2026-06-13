@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertCircle, CheckCircle, Plus, Trash2, CalendarDays,
-  ShieldAlert, Sparkles, Smile, Frown, Clock, TrendingDown,
-  TrendingUp, ChevronDown, ChevronUp, Zap, Info
+  ShieldAlert, TrendingDown, TrendingUp, ChevronDown, ChevronUp, Zap
 } from "lucide-react";
 
 interface LedgerEntry {
@@ -249,7 +248,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
     const subjects = WEEKLY_TIMETABLE[dayName] || [];
     const updated: Record<string, LedgerEntry["status"]> = {};
     SUBJECT_LIST.forEach((sub) => {
-      updated[sub] = subjects.includes(sub) ? "Attended" : "Attended";
+      updated[sub] = subjects.includes(sub) ? "Attended" : "Absent";
     });
     setBatchStatuses(updated);
   };
@@ -350,7 +349,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="grid grid-cols-4 gap-1">
                     {(["Attended", "Absent", "Mass Bunk", "Duty Leave"] as const).map((status) => {
                       const isActive = batchStatuses[subject] === status;
                       let btnColor = "bg-neutral-900 border-neutral-800 text-neutral-400";
@@ -364,7 +363,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                         <button
                           key={status}
                           onClick={() => handleBatchStatusChange(subject, status)}
-                          className={`flex-1 py-1 px-1 text-[9px] font-mono border rounded transition-all cursor-pointer ${btnColor}`}
+                          className={`py-1.5 px-1 text-[9px] font-mono border rounded transition-all cursor-pointer ${btnColor}`}
+                          aria-label={`Mark ${subject.split(" (")[0]} as ${status}`}
                         >
                           {status === "Mass Bunk" ? "Mass" : status.slice(0, 3)}
                         </button>

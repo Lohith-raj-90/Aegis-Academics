@@ -117,9 +117,11 @@ export default function App() {
       setUnscheduled(unscheduledData);
       setLibraryResources(libraryData);
       setChatMessages(chatData);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch user data:", err);
-      handleLogout();
+      if (err.message?.includes("401") || err.message?.includes("Unauthorized") || err.message?.includes("expired")) {
+        handleLogout();
+      }
     }
   }, [apiFetch]);
 
