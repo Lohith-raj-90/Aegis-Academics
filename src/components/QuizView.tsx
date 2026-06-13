@@ -193,7 +193,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
         <div className="lg:col-span-8 space-y-6">
           
           {/* Active module select pills */}
-          <div className="flex flex-wrap gap-2.5 p-1 rounded-xl bg-neutral-900/60 border border-neutral-850">
+          <div className="flex flex-wrap gap-2.5 p-1 rounded-xl bg-neutral-900/60 border border-neutral-800">
             <button 
               onClick={() => setActiveModule('multiple-choice')}
               className={`flex-1 min-w-[120px] py-2 px-3 text-xs font-mono rounded-lg cursor-pointer transition-all ${
@@ -241,7 +241,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
           {/* Module 1: MULTIPLE CHOICE */}
           {activeModule === 'multiple-choice' && (
-            <div className="bg-neutral-900/30 border border-neutral-850 rounded-xl p-6 space-y-6">
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 space-y-6">
               
               {!mcCompleted ? (
                 <>
@@ -251,7 +251,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                       <span className="text-xs font-mono text-amber-400 font-bold uppercase block">Advanced Calculus Diagnostic</span>
                       <span className="text-neutral-400 text-xs mt-0.5 block font-light">Target concept coordinates : Series & Limits</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-lg border border-neutral-850">
+                    <div className="flex items-center gap-2 bg-neutral-950 px-3 py-1.5 rounded-lg border border-neutral-800">
                       <Clock className="w-3.5 h-3.5 text-neutral-500 animate-pulse" />
                       <span className="text-xs font-mono text-white font-bold">{formatTime(secondsRemaining)}</span>
                     </div>
@@ -273,7 +273,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                       const isOptCorrect = opt === CALCULUS_QUESTIONS[mcIndex].correctAnswer;
                       const isOptSelected = selectedOpt === opt;
 
-                      let borderStyle = "border-neutral-850 hover:border-neutral-700 bg-neutral-950/20";
+                      let borderStyle = "border-neutral-800 hover:border-neutral-700 bg-neutral-950/20";
                       if (isOptSelected) borderStyle = "border-amber-400 bg-amber-500/5";
                       if (isGraded) {
                         if (isOptCorrect) borderStyle = "border-emerald-500/50 bg-emerald-500/5 text-emerald-300";
@@ -302,7 +302,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
                   {/* Feedback Explanation */}
                   {submitsCount[mcIndex] && (
-                    <div className="p-4 bg-neutral-950/40 border border-neutral-850 rounded-lg space-y-1.5 text-xs">
+                    <div className="p-4 bg-neutral-950/40 border border-neutral-800 rounded-lg space-y-1.5 text-xs">
                       <span className="font-mono text-neutral-400 uppercase tracking-wider block">Diagnostics Explanation Coordinates:</span>
                       <p className="text-neutral-350 leading-relaxed font-light">
                         {CALCULUS_QUESTIONS[mcIndex].explanation}
@@ -344,7 +344,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                   </div>
                   <button 
                     onClick={resetMcQuiz}
-                    className="px-4 py-2 border border-neutral-850 bg-neutral-950 hover:bg-neutral-900 text-xs font-mono text-amber-400 rounded-lg cursor-pointer"
+                    className="px-4 py-2 border border-neutral-800 bg-neutral-950 hover:bg-neutral-900 text-xs font-mono text-amber-400 rounded-lg cursor-pointer"
                   >
                     Repeat Diagnostic Session
                   </button>
@@ -359,7 +359,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
               {/* Card Container with custom flip CSS simulation */}
               <div 
                 onClick={() => setIsFlipped(!isFlipped)}
-                className="bg-neutral-900/30 border border-neutral-850 rounded-2xl p-12 min-h-64 flex flex-col justify-between items-center text-center cursor-pointer hover:border-amber-400/20 active:scale-[0.99] transition-all relative overflow-hidden"
+                className="bg-neutral-900/30 border border-neutral-800 rounded-2xl p-12 min-h-64 flex flex-col justify-between items-center text-center cursor-pointer hover:border-amber-400/20 active:scale-[0.99] transition-all relative overflow-hidden"
               >
                 {/* Overlay card status indicators */}
                 <span className="absolute top-4 left-4 text-[9px] font-mono tracking-widest uppercase text-neutral-500">
@@ -402,7 +402,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     setFcIndex(prev => Math.max(0, prev - 1));
                     setIsFlipped(false);
                   }}
-                  className="px-4 py-2 bg-neutral-950 border border-neutral-850 hover:bg-neutral-900 disabled:opacity-40 text-xs font-mono text-white rounded-lg cursor-pointer"
+                  className="px-4 py-2 bg-neutral-950 border border-neutral-800 hover:bg-neutral-900 disabled:opacity-40 text-xs font-mono text-white rounded-lg cursor-pointer"
                 >
                   ◀ previous card
                 </button>
@@ -412,7 +412,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
                     setFcIndex(prev => Math.min(FLASHCARDS.length - 1, prev + 1));
                     setIsFlipped(false);
                   }}
-                  className="px-4 py-2 bg-neutral-950 border border-neutral-850 hover:bg-neutral-900 disabled:opacity-40 text-xs font-mono text-white rounded-lg cursor-pointer"
+                  className="px-4 py-2 bg-neutral-950 border border-neutral-800 hover:bg-neutral-900 disabled:opacity-40 text-xs font-mono text-white rounded-lg cursor-pointer"
                 >
                   next card ▶
                 </button>
@@ -422,14 +422,14 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
           {/* Module 3: SHORT-ANSWER CRITIQUE */}
           {activeModule === 'short-answer' && (
-            <div className="bg-neutral-900/30 border border-neutral-850 rounded-xl p-6 space-y-6">
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 space-y-6">
               <div className="border-b border-neutral-900 pb-4 space-y-1">
                 <h3 className="text-base font-semibold text-white">Mathematical Analytic Short Critique</h3>
                 <p className="text-xs text-neutral-400 font-light">Input physical conceptual proofs. Aegis Core AI grades parameters automatically.</p>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 bg-neutral-950 border border-neutral-850 rounded-lg text-xs space-y-2">
+                <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-lg text-xs space-y-2">
                   <span className="text-[10px] uppercase font-mono text-neutral-500 font-bold block">Critique Prompt Challenge:</span>
                   <p className="text-white text-sm font-medium tracking-tight">
                     "Explain the fundamental difference between conditional and absolute convergence of infinite series."
@@ -472,14 +472,14 @@ export const QuizView: React.FC<QuizViewProps> = ({
 
           {/* Module 4: TECHNICAL CHALLENGE */}
           {activeModule === 'technical' && (
-            <div className="bg-neutral-900/30 border border-neutral-850 rounded-xl p-6 space-y-6">
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 space-y-6">
               <div className="border-b border-neutral-900 pb-4 space-y-1">
                 <h3 className="text-base font-semibold text-white">Technical Integrations Challenge</h3>
                 <p className="text-xs text-neutral-400 font-light">Code algorithms for continuous evaluation coordinates.</p>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 bg-neutral-950 border border-neutral-850 rounded-lg text-xs space-y-2">
+                <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-lg text-xs space-y-2">
                   <span className="text-[10px] uppercase font-mono text-neutral-500 font-bold block">Coding Objective:</span>
                   <p className="text-white text-sm font-medium">
                     "Write a TypeScript function simulating Euler integration on a basic linear differential system dy/dx = y for n steps."
@@ -522,7 +522,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
         </div>
 
         {/* Right Side Column: Dynamic Gauges Sidebar */}
-        <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-850 p-6 rounded-xl flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-800 p-6 rounded-xl flex flex-col justify-between space-y-6">
           
           <div className="border-b border-neutral-900 pb-4">
             <h3 className="text-sm font-semibold text-white font-mono">PL_READINESS_COILS</h3>
@@ -574,7 +574,7 @@ export const QuizView: React.FC<QuizViewProps> = ({
           </div>
 
           {/* Core session metadata list */}
-          <div className="space-y-3 pt-4 border-t border-neutral-905 text-xs font-mono">
+          <div className="space-y-3 pt-4 border-t border-neutral-900 text-xs font-mono">
             <div className="flex justify-between text-neutral-400">
               <span>MC_SCORE (LAST SESSION)</span>
               <span className="text-white">{mcScore} pts</span>

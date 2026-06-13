@@ -1,13 +1,9 @@
 import express from 'express';
-import cors from 'cors';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
 import { query } from './db.js';
 import { createToken, verifyToken, type SessionUser } from './auth.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'aegis-academics-secret-key-change-in-production';
 
 export interface AuthenticatedRequest extends express.Request {
   user?: SessionUser;
@@ -59,9 +55,6 @@ async function requireAuth(req: AuthenticatedRequest, res: express.Response, nex
 
 export function createAuthRouter() {
   const router = express.Router();
-
-  router.use(cors());
-  router.use(express.json());
 
   router.post('/api/auth/register', async (req, res) => {
     try {

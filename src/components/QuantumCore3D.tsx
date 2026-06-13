@@ -884,7 +884,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
     <div ref={containerRef} className="relative flex flex-col items-center select-none">
       
       {/* 3D Console Segment Selector (Mode swappers toggling the images seamlessly) */}
-      <div className="flex gap-1.5 p-1 bg-neutral-950/80 border border-neutral-850 rounded-lg text-[9px] font-mono mb-4 w-full justify-between shadow-lg relative z-25">
+      <div className="flex gap-1.5 p-1 bg-neutral-950/80 border border-neutral-800 rounded-lg text-[9px] font-mono mb-4 w-full justify-between shadow-lg relative z-25">
         <button
           onClick={() => setActiveMode("helios")}
           className={`flex-1 py-1 px-1.5 rounded transition-all cursor-pointer ${
@@ -935,7 +935,7 @@ export const QuantumCore3D: React.FC<QuantumCore3DProps> = ({
         />
 
         {/* Floating Telemetry Coordinates Indicator readout underneath */}
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-neutral-950/95 border border-neutral-900 px-3 py-0.5 rounded text-[8px] font-mono tracking-widest text-neutral-450 shadow-md flex items-center gap-1 whitespace-nowrap">
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-neutral-950/95 border border-neutral-900 px-3 py-0.5 rounded text-[8px] font-mono tracking-widest text-neutral-400 shadow-md flex items-center gap-1 whitespace-nowrap">
           <span className={`w-1 h-1 rounded-full animate-ping ${activeMode === "helios" ? "bg-amber-400" : activeMode === "onyx" ? "bg-purple-400" : "bg-indigo-400"}`} />
           <span>CORD:</span>
           <span className={activeMode === "helios" ? "text-amber-400" : activeMode === "onyx" ? "text-purple-400" : "text-indigo-400"}>

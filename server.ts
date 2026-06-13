@@ -9,7 +9,7 @@ import { createAuthRouter } from "./src/server/routes.js";
 
 dotenv.config();
 
-process.env.NODE_ENV = process.env.NODE_ENV || "production";
+
 
 async function startServer() {
   const app = express();

@@ -207,7 +207,7 @@ export const SmoothCursor: React.FC = () => {
           boxShadow: isHovered
             ? "0 0 12px rgba(99,102,241,0.25)"
             : "0 0 6px rgba(224,172,67,0.12)",
-          transform: `translate(-5/2, -5/2) scale(${clicked ? 0.75 : 1})`,
+          transform: `translate(-50%, -50%) scale(${clicked ? 0.75 : 1})`,
           transition: "transform 0.12s ease-out, border 0.25s, width 0.2s, height 0.2s",
         }}
       />

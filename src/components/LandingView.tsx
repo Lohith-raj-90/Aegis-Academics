@@ -33,28 +33,28 @@ const FEATURES = [
     icon: BarChart3,
     title: "Attendance Forecasting",
     description: "Predictive simulators calculate exactly how many classes you can skip before losing exam eligibility.",
-    color: "amber",
+    iconClass: "bg-amber-500/10 border-amber-500/20 text-amber-400",
     stat: "75% VTU threshold monitored"
   },
   {
     icon: Brain,
     title: "AI Study Companion",
     description: "Ask questions about calculus, quantum physics, or automata theory and get instant, structured answers.",
-    color: "purple",
+    iconClass: "bg-purple-500/10 border-purple-500/20 text-purple-400",
     stat: "Powered by Gemini 2.5 Flash"
   },
   {
     icon: Globe,
     title: "3D Math Visualizer",
     description: "Interactive WebGL renderer lets you drag and rotate mathematical projections in real-time.",
-    color: "indigo",
+    iconClass: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
     stat: "60fps browser rendering"
   },
   {
     icon: BookOpen,
     title: "Syllabus Vault",
     description: "Organize and track all your VTU curriculum resources in one synced digital library.",
-    color: "emerald",
+    iconClass: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
     stat: "Auto-sync enabled"
   },
 ];
@@ -287,32 +287,24 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((feature, i) => {
-              const colorMap: Record<string, string> = {
-                amber: "bg-amber-500/10 border-amber-500/20 text-amber-400",
-                purple: "bg-purple-500/10 border-purple-500/20 text-purple-400",
-                indigo: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400",
-                emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-              };
-              return (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className="bg-zinc-950/60 border border-zinc-900 hover:border-amber-400/25 p-6 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:shadow-lg hover:shadow-amber-500/5">
-                  <div className="space-y-4">
-                    <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${colorMap[feature.color]}`}>
-                      <feature.icon className="w-5 h-5 stroke-[2]" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-base font-medium text-white group-hover:text-amber-400 transition-colors">{feature.title}</h3>
-                      <p className="text-zinc-400 text-xs leading-relaxed font-light">{feature.description}</p>
-                    </div>
+            {FEATURES.map((feature, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="bg-zinc-950/60 border border-zinc-900 hover:border-amber-400/25 p-6 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:shadow-lg hover:shadow-amber-500/5">
+                <div className="space-y-4">
+                  <div className={`w-11 h-11 rounded-xl border flex items-center justify-center ${feature.iconClass}`}>
+                    <feature.icon className="w-5 h-5 stroke-[2]" />
                   </div>
-                  <div className="pt-4 mt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500">
-                    {feature.stat}
+                  <div className="space-y-2">
+                    <h3 className="text-base font-medium text-white group-hover:text-amber-400 transition-colors">{feature.title}</h3>
+                    <p className="text-zinc-400 text-xs leading-relaxed font-light">{feature.description}</p>
                   </div>
-                </motion.div>
-              );
-            })}
+                </div>
+                <div className="pt-4 mt-4 border-t border-zinc-900 text-[10px] font-mono text-zinc-500">
+                  {feature.stat}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -406,14 +398,14 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
             <div className="md:col-span-4 bg-zinc-900/10 border-r border-zinc-900 p-6 space-y-4">
               <span className="font-mono text-[10px] tracking-widest text-zinc-500 uppercase block">Topics</span>
               {[
-                { key: "graphics" as const, label: "Computer Graphics 3D", sub: "Polygon Shading, Projections", icon: Code, color: "amber" },
-                { key: "database" as const, label: "Relational Algebra", sub: "Schema Joins, DDL Bounds", icon: BookOpen, color: "purple" },
-                { key: "networks" as const, label: "Networking Protocols", sub: "Routing Matrices, Congestion", icon: Cpu, color: "indigo" },
+                { key: "graphics" as const, label: "Computer Graphics 3D", sub: "Polygon Shading, Projections", icon: Code, activeClass: "bg-amber-400/[0.04] border-amber-400/25 text-amber-400" },
+                { key: "database" as const, label: "Relational Algebra", sub: "Schema Joins, DDL Bounds", icon: BookOpen, activeClass: "bg-purple-400/[0.04] border-purple-400/25 text-purple-400" },
+                { key: "networks" as const, label: "Networking Protocols", sub: "Routing Matrices, Congestion", icon: Cpu, activeClass: "bg-indigo-400/[0.04] border-indigo-400/25 text-indigo-400" },
               ].map((topic) => (
                 <button key={topic.key} onClick={() => { setActiveSandboxTopic(topic.key); resetQuiz(); }}
                   className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${
                     activeSandboxTopic === topic.key
-                      ? `bg-${topic.color}-400/[0.04] border-${topic.color}-400/25 text-${topic.color}-400`
+                      ? topic.activeClass
                       : "bg-transparent border-zinc-900 text-zinc-400 hover:text-white"
                   }`}>
                   <topic.icon className="w-4 h-4" />
@@ -432,7 +424,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onBackToLogin }) => {
             <div className="md:col-span-8 p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <span className={`font-mono text-[10px] text-${currentQuiz.color}-400 uppercase tracking-widest`}>// {currentQuiz.module}</span>
+                  <span className="font-mono text-[10px] text-amber-400 uppercase tracking-widest">// {currentQuiz.module}</span>
                   <h3 className="text-lg font-sans font-semibold text-white">{currentQuiz.question}</h3>
                 </div>
                 <p className="text-zinc-400 text-xs">{currentQuiz.context}</p>

@@ -12,6 +12,7 @@ interface DashboardContainerProps {
   username: string;
   isDeepFocus?: boolean;
   activeHighlightKeyword?: string | null;
+  highlightOpacity?: number;
   onClearHighlightKeyword?: () => void;
 }
 

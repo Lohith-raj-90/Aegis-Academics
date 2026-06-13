@@ -12,7 +12,6 @@ interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigateToPromo, onNavigateToRegister }) => {
   const [email, setEmail] = useState("");
   const [accessKey, setAccessKey] = useState("");
-  const [isHovered, setIsHovered] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -146,8 +145,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onNavigate
 
               <button
                 type="submit"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
                 disabled={isLoading}
                 className="w-full relative group cursor-pointer overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 p-[1px] shadow-lg shadow-amber-500/10 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
               >

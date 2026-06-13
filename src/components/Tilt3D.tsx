@@ -11,29 +11,26 @@ interface Tilt3DProps {
 export const Tilt3D: React.FC<Tilt3DProps> = ({
   children,
   className = "",
-  maxTilt = 7,  // Max degree tilt limits for elegant subtle feedback
-  scale = 1.015, // Micro scale layout magnification on hover
+  maxTilt = 7,
+  scale = 1.015,
   id
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [transformStyle, setTransformStyle] = useState("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
   const [isHovered, setIsHovered] = useState(false);
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const card = containerRef.current;
     if (!card) return;
 
     const rect = card.getBoundingClientRect();
-    
-    // Relative coordinates of cursor inside the mapped card rect
     const localX = e.clientX - rect.left;
     const localY = e.clientY - rect.top;
 
-    // Normalize coordinates around point center {0, 0}
-    const normX = (localX / rect.width) * 2 - 1; // ranges from -1 to +1
-    const normY = (localY / rect.height) * 2 - 1; // ranges from -1 to +1
+    const normX = (localX / rect.width) * 2 - 1;
+    const normY = (localY / rect.height) * 2 - 1;
 
-    // Reverse orientation values so bounding face follows coordinates
     const rotateX = -(normY * maxTilt).toFixed(2);
     const rotateY = (normX * maxTilt).toFixed(2);
 
@@ -43,6 +40,11 @@ export const Tilt3D: React.FC<Tilt3DProps> = ({
       rotateY(${rotateY}deg) 
       scale3d(${scale}, ${scale}, ${scale})
     `);
+
+    setGlowPos({
+      x: (localX / rect.width) * 100,
+      y: (localY / rect.height) * 100,
+    });
   };
 
   const handleMouseEnter = () => {
@@ -51,7 +53,6 @@ export const Tilt3D: React.FC<Tilt3DProps> = ({
 
   const handleMouseLeave = () => {
     setIsHovered(false);
-    // Reset to base flat coordinates smoothly using CSS transitions
     setTransformStyle("perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)");
   };
 
@@ -71,12 +72,12 @@ export const Tilt3D: React.FC<Tilt3DProps> = ({
           : "0 4px 15px rgba(0,0,0,0.15), inset 0 0 1px rgba(255,255,255,0.03)"
       }}
     >
-      {/* Absolute backplane inner coordinates glow */}
       {isHovered && (
         <div 
-          className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden bg-[radial-gradient(circle_at_var(--x,_50%)_var(--y,_50%),rgba(224,172,67,0.04)_0%,transparent_60%)]"
+          className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden"
           style={{
-            zIndex: 0
+            zIndex: 0,
+            background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(224,172,67,0.04) 0%, transparent 60%)`
           }}
         />
       )}

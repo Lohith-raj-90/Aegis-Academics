@@ -309,7 +309,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
       {showBatchLog && (
         <div className="bg-neutral-900/40 border border-emerald-500/20 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-850 pb-3">
+          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-emerald-400" />
               Log Entire Day
@@ -338,7 +338,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   className={`p-3 rounded-xl border transition-all ${
                     isScheduled
                       ? "bg-emerald-500/5 border-emerald-500/20"
-                      : "bg-neutral-950/40 border-neutral-850"
+                      : "bg-neutral-950/40 border-neutral-800"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -391,7 +391,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         <div className="xl:col-span-4 flex flex-col gap-6">
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5 border-b border-neutral-850 pb-3">
+            <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5 border-b border-neutral-800 pb-3">
               <CalendarDays className="w-4 h-4 text-emerald-400" />
               Log Single Session
             </h3>
@@ -443,7 +443,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           </div>
 
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 flex flex-col justify-between overflow-hidden relative">
-            <div className="border-b border-neutral-850 pb-3">
+            <div className="border-b border-neutral-800 pb-3">
               <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5">
                 <ShieldAlert className="w-4 h-4 text-amber-500" />
                 Attendance Verdict
@@ -496,7 +496,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
         <div className="xl:col-span-8 flex flex-col gap-6">
           <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-white font-mono flex items-center justify-between border-b border-neutral-850 pb-3">
+            <h3 className="text-sm font-semibold text-white font-mono flex items-center justify-between border-b border-neutral-800 pb-3">
               <span>Subject Overview (VTU Minimum: 75%)</span>
               <span className="text-[10px] uppercase text-neutral-500">Live & Simulated Forecast</span>
             </h3>
@@ -512,7 +512,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
                 return (
                   <div key={subject} className={`bg-neutral-950/60 p-4 border rounded-xl space-y-3 transition-all ${
-                    !subIsSafe ? "border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.05)]" : "border-neutral-850"
+                    !subIsSafe ? "border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.05)]" : "border-neutral-800"
                   }`}>
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
@@ -573,7 +573,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-neutral-900/20 px-3 py-2 border border-neutral-850/40 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="bg-neutral-900/20 px-3 py-2 border border-neutral-800/40 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div className="flex items-center gap-1.5 font-mono text-[10px]">
                         <span className="text-neutral-400">Simulate upcoming skips:</span>
                         <span className="text-red-400 font-bold">-{subM.simulatedSkips} sessions</span>
@@ -590,7 +590,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
 
                     <button
                       onClick={() => setExpandedBunk(isBunkExpanded ? null : subject)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-neutral-900/30 border border-neutral-850/40 rounded-lg text-[10px] font-mono text-neutral-300 hover:bg-neutral-900/50 transition-all cursor-pointer"
+                      className="w-full flex items-center justify-between px-3 py-2 bg-neutral-900/30 border border-neutral-800/40 rounded-lg text-[10px] font-mono text-neutral-300 hover:bg-neutral-900/50 transition-all cursor-pointer"
                     >
                       <span className="flex items-center gap-1.5">
                         <Zap className="w-3 h-3 text-amber-400" />
@@ -625,7 +625,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       </div>
 
       <div className="bg-neutral-900/40 border border-neutral-800/80 rounded-xl p-5 space-y-4">
-        <div className="border-b border-neutral-850 pb-3 flex justify-between items-center">
+        <div className="border-b border-neutral-800 pb-3 flex justify-between items-center">
           <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-2">
             <CalendarDays className="w-4.5 h-4.5 text-amber-500" />
             Attendance History
@@ -640,7 +640,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse font-mono text-xs text-neutral-300">
               <thead>
-                <tr className="border-b border-neutral-850 text-neutral-500">
+                <tr className="border-b border-neutral-800 text-neutral-500">
                   <th className="py-2.5 px-3 font-normal uppercase">Date</th>
                   <th className="py-2.5 px-3 font-normal uppercase">Subject</th>
                   <th className="py-2.5 px-3 font-normal uppercase">Status</th>

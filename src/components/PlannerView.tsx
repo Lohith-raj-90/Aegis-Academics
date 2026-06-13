@@ -107,7 +107,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             {days.map(day => {
               const dayTasks = tasks.filter(t => t.day === day);
               return (
-                <div key={day} className="bg-neutral-900/30 border border-neutral-850 rounded-xl p-5 space-y-4">
+                <div key={day} className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-neutral-900 pb-2">
                     <span className="text-xs font-mono uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-neutral-500" />
@@ -182,7 +182,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         <div className="lg:col-span-4 space-y-6">
           
           {/* Command Center Stats Block */}
-          <div className="bg-neutral-900/30 border border-neutral-850 p-6 rounded-xl space-y-4">
+          <div className="bg-neutral-900/30 border border-neutral-800 p-6 rounded-xl space-y-4">
             <h3 className="text-sm font-semibold text-white font-mono flex items-center gap-1.5 border-b border-neutral-900 pb-2">
               <Shield className="w-4 h-4 text-amber-400" />
               PLANNER_TELEMETRY
@@ -217,7 +217,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           </div>
 
           {/* Unscheduled Targets */}
-          <div className="bg-neutral-900/30 border border-neutral-850 p-5 rounded-xl space-y-4">
+          <div className="bg-neutral-900/30 border border-neutral-800 p-5 rounded-xl space-y-4">
             <div className="flex justify-between items-center border-b border-neutral-900 pb-2">
               <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5 font-mono">
                 <Target className="w-3.5 h-3.5 text-neutral-500" />

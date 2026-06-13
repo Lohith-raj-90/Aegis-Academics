@@ -3,23 +3,14 @@ import {
   Sparkles, 
   Calendar, 
   TrendingUp, 
-  Award, 
-  Clock, 
-  ArrowUpRight, 
-  GraduationCap, 
   ArrowRight,
   Cpu,
   Activity,
-  Flame,
-  Sliders,
   RefreshCw,
   BookOpen,
   CheckCircle2,
-  AlertTriangle,
   Play,
   BookmarkCheck,
-  UserCheck,
-  HelpCircle
 } from "lucide-react";
 import { TabType } from "../types";
 import { QuantumCore3D } from "./QuantumCore3D";
@@ -299,7 +290,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-[9px] uppercase font-mono tracking-widest text-amber-400 block">spatial renderer v2</span>
                 <h3 className="text-sm font-sans font-semibold text-white">Quantum Vector Space</h3>
               </div>
-              <div className="px-2 py-0.5 rounded bg-zinc-900/80 text-[8px] font-mono text-zinc-400 border border-zinc-850">
+              <div className="px-2 py-0.5 rounded bg-zinc-900/80 text-[8px] font-mono text-zinc-400 border border-zinc-800">
                 DRAG ORBIT
               </div>
             </div>
@@ -339,7 +330,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-[10px] font-mono tracking-widest text-indigo-400 block">// PREVENTIVE_FORECAST</span>
                 <h3 className="text-base font-semibold text-white">VTU Attendance Simulator</h3>
               </div>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 text-[8px] font-mono text-zinc-400 uppercase border border-zinc-850 tracking-wider">
+              <span className="px-2 py-0.5 rounded bg-zinc-900 text-[8px] font-mono text-zinc-400 uppercase border border-zinc-800 tracking-wider">
                 Eligibility math
               </span>
             </div>
@@ -596,7 +587,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <button
                 onClick={handleLogStudyTime}
-                className="w-full px-4 py-2 bg-zinc-900 hover:bg-amber-400 border border-zinc-850 hover:border-amber-400 text-zinc-200 hover:text-neutral-950 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full px-4 py-2 bg-zinc-900 hover:bg-amber-400 border border-zinc-800 hover:border-amber-400 text-zinc-200 hover:text-neutral-950 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <BookmarkCheck className="w-3.5 h-3.5" />
                 Register Focus Session
@@ -759,7 +750,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span className="text-xs font-semibold text-white group-hover:text-purple-400 transition-colors block">NP-Complete Computations</span>
                     <span className="text-[9px] text-zinc-500 font-mono">Turing tape halts and reductions</span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-850">Dec 20</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">Dec 20</span>
                 </div>
               </div>
             </div>

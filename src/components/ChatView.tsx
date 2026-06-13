@@ -79,7 +79,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-sans h-[calc(100vh-140px)] min-h-[500px]">
-      <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-neutral-900/30 border border-neutral-850 rounded-3xl flex flex-col overflow-hidden transition-all duration-300`}>
+      <div className={`${isDeepFocus ? "lg:col-span-12" : "lg:col-span-8"} bg-neutral-900/30 border border-neutral-800 rounded-3xl flex flex-col overflow-hidden transition-all duration-300`}>
         <div className="p-5 border-b border-neutral-900/70 bg-gradient-to-r from-slate-950 via-neutral-900 to-amber-950/10 backdrop-blur-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -188,7 +188,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
 
       {!isDeepFocus && (
-        <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-850 p-5 rounded-3xl flex flex-col justify-between gap-5">
+        <div className="lg:col-span-4 bg-neutral-900/30 border border-neutral-800 p-5 rounded-3xl flex flex-col justify-between gap-5">
           <div className="space-y-4">
             <div className="border-b border-neutral-900/80 pb-3">
               <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 font-mono flex items-center gap-2">

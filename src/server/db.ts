@@ -231,6 +231,7 @@ export async function initializeDatabase() {
         id TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL,
         subject TEXT NOT NULL,
+        topic TEXT NOT NULL,
         estimated_hours INTEGER NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

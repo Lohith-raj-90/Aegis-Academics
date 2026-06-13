@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   LayoutDashboard, 
   Clock, 
@@ -68,6 +68,8 @@ export default function App() {
   const [unscheduled, setUnscheduled] = useState<UnscheduledTarget[]>([]);
   const [libraryResources, setLibraryResources] = useState<LibraryResource[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const chatMessagesRef = useRef(chatMessages);
+  chatMessagesRef.current = chatMessages;
   const [attendancePct, setAttendancePct] = useState(0);
   const [readinessScore, setReadinessScore] = useState(0);
 
@@ -270,7 +272,7 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...chatMessages, userMsg].map(m => ({
+          messages: [...chatMessagesRef.current, userMsg].map(m => ({
             role: m.role,
             content: m.content
           }))
@@ -390,7 +392,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="p-3 bg-neutral-900/40 border border-neutral-850 rounded-xl relative overflow-hidden">
+          <div className="p-3 bg-neutral-900/40 border border-neutral-800 rounded-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-1">
               <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
             </div>
@@ -479,7 +481,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="flex items-center bg-neutral-900/65 border border-neutral-850 rounded-lg p-0.5 font-mono text-[10px] shadow-inner select-none">
+          <div className="flex items-center bg-neutral-900/65 border border-neutral-800 rounded-lg p-0.5 font-mono text-[10px] shadow-inner select-none">
             <button
               onClick={() => setIsDeepFocus(false)}
               className={`px-3 py-1 rounded transition-all cursor-pointer ${
@@ -589,7 +591,7 @@ export default function App() {
 
             <form onSubmit={handleSaveSettings} className="space-y-4 pt-1">
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-450 flex items-center gap-1">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 flex items-center gap-1">
                   <User className="w-3 h-3 text-neutral-500" />
                   Your Profile Name
                 </label>
@@ -603,7 +605,7 @@ export default function App() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-450">Academic Coordinate Email</label>
+                <label className="text-[10px] uppercase font-mono tracking-wider text-neutral-400">Academic Coordinate Email</label>
                 <input
                   type="email"
                   value={settingsEmailInput}
@@ -613,7 +615,7 @@ export default function App() {
                 />
               </div>
 
-              <div className="p-3 bg-neutral-950/40 border border-neutral-850 rounded-lg text-[10px] font-mono text-neutral-400 space-y-1">
+              <div className="p-3 bg-neutral-950/40 border border-neutral-800 rounded-lg text-[10px] font-mono text-neutral-400 space-y-1">
                 <span className="text-amber-400 font-bold block">TELEMETRY_STATUS:</span>
                 <p className="leading-relaxed">
                   Credentials verified under sovereign federated coordinate rules. Sync is active and local memories are backed up seamlessly.

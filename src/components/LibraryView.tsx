@@ -80,7 +80,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
 
         {/* Sync Status Header */}
-        <div className="flex items-center gap-3 bg-neutral-900/60 border border-neutral-850 p-2.5 rounded-lg text-xs font-mono">
+        <div className="flex items-center gap-3 bg-neutral-900/60 border border-neutral-800 p-2.5 rounded-lg text-xs font-mono">
           <Database className="w-4 h-4 text-amber-400" />
           <div className="text-left leading-none">
             <span className="text-[9px] uppercase text-neutral-500 block">CORE SYNC PULSE</span>
@@ -93,7 +93,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Vault Capacity stats */}
-        <div className="bg-neutral-900/30 border border-neutral-850 p-5 rounded-xl flex items-center justify-between gap-4">
+        <div className="bg-neutral-900/30 border border-neutral-800 p-5 rounded-xl flex items-center justify-between gap-4">
           <div className="space-y-1.5 flex-1">
             <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider block">Neural Vault Capacity</span>
             <div className="flex items-baseline gap-1.5">
@@ -108,13 +108,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               />
             </div>
           </div>
-          <div className="w-12 h-12 bg-neutral-950 rounded-lg flex items-center justify-center text-amber-400/90 border border-neutral-850 shrink-0">
+          <div className="w-12 h-12 bg-neutral-950 rounded-lg flex items-center justify-center text-amber-400/90 border border-neutral-800 shrink-0">
             <HardDrive className="w-6 h-6" />
           </div>
         </div>
 
         {/* Knowledge Absorbed statistical cards */}
-        <div className="bg-neutral-900/30 border border-neutral-850 p-5 rounded-xl flex items-center justify-between gap-4">
+        <div className="bg-neutral-900/30 border border-neutral-800 p-5 rounded-xl flex items-center justify-between gap-4">
           <div className="space-y-1">
             <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider block">Synced Indices</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -123,7 +123,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
             </div>
             <p className="text-[11px] text-neutral-400 font-light">Memory retrieval latency optimized at zero bounds.</p>
           </div>
-          <div className="w-12 h-12 bg-neutral-950 rounded-lg flex items-center justify-center text-indigo-400/90 border border-neutral-850 shrink-0">
+          <div className="w-12 h-12 bg-neutral-950 rounded-lg flex items-center justify-center text-indigo-400/90 border border-neutral-800 shrink-0">
             <CheckCircle className="w-6 h-6 animate-pulse" />
           </div>
         </div>
@@ -132,7 +132,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Side: Search & Indices Table */}
-        <div className="lg:col-span-7 bg-neutral-900/30 border border-neutral-850 rounded-xl p-5 space-y-4">
+        <div className="lg:col-span-7 bg-neutral-900/30 border border-neutral-800 rounded-xl p-5 space-y-4">
           
           {/* Custom Search bar */}
           <div className="relative">
@@ -171,7 +171,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                         : "bg-neutral-900/80 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.05)]" 
                       : isMatched
                         ? "bg-amber-400/[0.02] animate-pulse"
-                        : "bg-neutral-900/40 border-neutral-850 hover:border-neutral-700"
+                        : "bg-neutral-900/40 border-neutral-800 hover:border-neutral-700"
                   }`}
                 >
                   {isMatched && (
@@ -185,7 +185,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-white block">{res.title}</span>
-                      <span className="text-[8px] font-mono px-1 rounded bg-neutral-950 text-neutral-400 border border-neutral-850">
+                      <span className="text-[8px] font-mono px-1 rounded bg-neutral-950 text-neutral-400 border border-neutral-800">
                         {res.category}
                       </span>
                     </div>
@@ -204,7 +204,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
                       className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold cursor-pointer transition-all ${
                         res.synced 
                           ? "bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20" 
-                          : "bg-neutral-950 text-neutral-300 border border-neutral-850 hover:border-amber-400/40 hover:text-amber-400"
+                          : "bg-neutral-950 text-neutral-300 border border-neutral-800 hover:border-amber-400/40 hover:text-amber-400"
                       }`}
                     >
                       {res.synced ? "SYNCED" : "SYNC"}
@@ -223,7 +223,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         </div>
 
         {/* Right Side: Active Document Sync Preview Card (Document 2 detail) */}
-        <div className="lg:col-span-5 bg-neutral-900/30 border border-neutral-850 p-6 rounded-xl flex flex-col justify-between space-y-6 relative overflow-hidden">
+        <div className="lg:col-span-5 bg-neutral-900/30 border border-neutral-800 p-6 rounded-xl flex flex-col justify-between space-y-6 relative overflow-hidden">
           {previewResource ? (
             <>
               {/* Card top badge */}
@@ -242,13 +242,13 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
               </div>
 
               {/* Document abstract */}
-              <div className="bg-neutral-950 p-4 border border-neutral-850 rounded-lg text-xs leading-relaxed text-neutral-350 space-y-2 font-light">
+              <div className="bg-neutral-950 p-4 border border-neutral-800 rounded-lg text-xs leading-relaxed text-neutral-300 space-y-2 font-light">
                 <span className="text-[9px] uppercase text-neutral-500 font-mono block">Abstract Synopsis:</span>
                 <p>{previewResource.abstract}</p>
               </div>
 
               {/* Data specifications */}
-              <div className="space-y-2.5 pt-2 border-t border-neutral-905 text-xs font-mono">
+              <div className="space-y-2.5 pt-2 border-t border-neutral-900 text-xs font-mono">
                 <div className="flex justify-between text-neutral-400">
                   <span>METRIC DESIRED VALUE</span>
                   <span className="text-white">COGNITIVE_INDEX</span>
