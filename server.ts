@@ -202,7 +202,7 @@ Your communication has routed directly to the Aegis heuristic neural backup laye
         "Use clean Markdown formatting, tables, or itemized steps to look incredibly polished.";
 
       // Support fallback models if the primary model returns 503
-      const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
       let responseText = "";
       let success = false;
       let lastApiError: any = null;

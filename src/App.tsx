@@ -75,7 +75,7 @@ export default function App() {
   const [settingsNameInput, setSettingsNameInput] = useState("");
   const [settingsEmailInput, setSettingsEmailInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [modelName, setModelName] = useState<string>("GEMINI_3.5_FLASH");
+  const [modelName, setModelName] = useState<string>("GEMINI_2.5_FLASH");
   const [modelLatency, setModelLatency] = useState<number | null>(35);
   const [responseFidelity, setResponseFidelity] = useState({ level: "High", percentage: 80 });
   const [modelMemoryEnabled, setModelMemoryEnabled] = useState<boolean>(true);
