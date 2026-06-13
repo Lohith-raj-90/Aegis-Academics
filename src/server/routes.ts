@@ -13,6 +13,12 @@ export interface AuthenticatedRequest extends express.Request {
   user?: SessionUser;
 }
 
+function asyncHandler(fn: (req: any, res: any, next: any) => Promise<any>) {
+  return (req: any, res: any, next: any) => {
+    fn(req, res, next).catch(next);
+  };
+}
+
 async function requireAuth(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -153,7 +159,7 @@ export function createAuthRouter() {
     }
   });
 
-  router.post('/api/auth/logout', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.post('/api/auth/logout', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     try {
       if (req.user && req.user.sessionId) {
         await query('DELETE FROM sessions WHERE id = $1', [req.user.sessionId]);
@@ -165,7 +171,7 @@ export function createAuthRouter() {
     }
   });
 
-  router.get('/api/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
+  router.get('/api/auth/me', asyncHandler(requireAuth), (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -182,7 +188,7 @@ export function createAuthRouter() {
     });
   });
 
-  router.put('/api/auth/profile', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.put('/api/auth/profile', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -194,7 +200,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.get('/api/tasks', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.get('/api/tasks', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -205,7 +211,7 @@ export function createAuthRouter() {
     res.json(result.rows);
   });
 
-  router.post('/api/tasks', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.post('/api/tasks', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -218,7 +224,7 @@ export function createAuthRouter() {
     res.status(201).json({ id, subject, topic, day, duration, priority, completed: !!completed });
   });
 
-  router.put('/api/tasks/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.put('/api/tasks/:id', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -230,7 +236,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.delete('/api/tasks/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.delete('/api/tasks/:id', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -238,7 +244,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.get('/api/unscheduled', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.get('/api/unscheduled', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -249,7 +255,7 @@ export function createAuthRouter() {
     res.json(result.rows);
   });
 
-  router.post('/api/unscheduled', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.post('/api/unscheduled', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -262,7 +268,7 @@ export function createAuthRouter() {
     res.status(201).json({ id, subject, topic, estimatedHours });
   });
 
-  router.delete('/api/unscheduled/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.delete('/api/unscheduled/:id', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -270,7 +276,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.get('/api/library', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.get('/api/library', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -281,7 +287,7 @@ export function createAuthRouter() {
     res.json(result.rows);
   });
 
-  router.put('/api/library/:id/sync', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.put('/api/library/:id/sync', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -293,7 +299,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.get('/api/chat/messages', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.get('/api/chat/messages', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -304,7 +310,7 @@ export function createAuthRouter() {
     res.json(result.rows);
   });
 
-  router.post('/api/chat/messages', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.post('/api/chat/messages', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -317,7 +323,7 @@ export function createAuthRouter() {
     res.status(201).json({ id, role, content, timestamp });
   });
 
-  router.get('/api/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.get('/api/attendance', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -328,7 +334,7 @@ export function createAuthRouter() {
     res.json(result.rows);
   });
 
-  router.post('/api/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.post('/api/attendance', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -341,7 +347,7 @@ export function createAuthRouter() {
     res.status(201).json({ id, subject, date, status });
   });
 
-  router.delete('/api/attendance/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.delete('/api/attendance/:id', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -349,7 +355,7 @@ export function createAuthRouter() {
     res.json({ success: true });
   });
 
-  router.put('/api/user/readiness', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.put('/api/user/readiness', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
@@ -361,7 +367,7 @@ export function createAuthRouter() {
     res.json({ success: true, score });
   });
 
-  router.put('/api/user/attendance', requireAuth, async (req: AuthenticatedRequest, res) => {
+  router.put('/api/user/attendance', asyncHandler(requireAuth), async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
